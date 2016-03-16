@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
   xmax =  2; ymax =  2;
   w = h = 800;
   prof = 10000;
-  
+
   /* Recuperation des parametres */
   if( argc > 1) w    = atoi(argv[1]);
   if( argc > 2) h    = atoi(argv[2]);
@@ -252,13 +252,13 @@ int main(int argc, char *argv[]) {
   /* Calcul des pas d'incrementation */
   xinc = (xmax - xmin) / (w-1);
   yinc = (ymax - ymin) / (h-1);
-  
+
   /* affichage parametres pour verificatrion */
   fprintf( stderr, "Domaine: {[%lg,%lg]x[%lg,%lg]}\n", xmin, ymin, xmax, ymax);
   fprintf( stderr, "Increment : %lg %lg\n", xinc, yinc);
   fprintf( stderr, "Prof: %d\n",  prof);
   fprintf( stderr, "Dim image: %dx%d\n", w, h);
-  
+
   if (MPI_Init(&argc, &argv) != 0) {
     fprintf( stderr, "Unable to start MPI\n");
     return EXIT_FAILURE;
@@ -266,6 +266,14 @@ int main(int argc, char *argv[]) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &nproc);
   fprintf( stderr, "Process number: %d\n", nproc);
+
+  /* Calcul du nombre de blocs */
+  if( h % nproc != 0 ) {
+    fprintf( stderr, "Mauvais nombre de processus\n");
+    return EXIT_FAILURE;
+  }
+  nblocks = nproc;
+  nlines = h / nblocks;
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   {
@@ -278,7 +286,7 @@ int main(int argc, char *argv[]) {
   if(rank == MASTER) {
     /* Allocation memoire du tableau resultat */  
     pima = ima = (unsigned char *)malloc( w*h*sizeof(unsigned char));
-      
+
     if( ima == NULL) {
       fprintf( stderr, "Erreur allocation mémoire du tableau \n");
       return EXIT_FAILURE;
@@ -286,31 +294,62 @@ int main(int argc, char *argv[]) {
   } else {
     // Allocation de la sous-image
     pima = ima = (unsigned char *)malloc( w*nlines*sizeof(unsigned char));
-    
+
     if(ima == NULL) {
       fprintf( stderr, "Unable to allocate memory for sub-image\n");
       return EXIT_FAILURE;
     }
   }
-  
+
   /* Traitement de la grille point par point */
   {
     int  i, j;
     double x, y;
 
-    y = ymin;
+    y = ymin + yinc * rank * nlines;
     fprintf(stderr, "(%d) Begin computation.\n", rank);
-    for (i = 0; i < h; i++) {	
+    for (i = 0; i < nlines; i++) {
       x = xmin;
       for (j = 0; j < w; j++) {
 	*pima++ = xy2color( x, y, prof); 
 	x += xinc;
       }
-      y += yinc; 
+      y += yinc;
     }
   }
 
   fprintf(stderr, "(%d) End computation\n", rank);
+
+  /* Envoi/Réception des données */
+  if( rank == MASTER ) {
+    int p, source = -1;
+    MPI_Status status = {0};
+
+    /* Récupération des images locales */
+    for(p = 1 ; p < nproc ; p++) {
+      fprintf( stderr, "Preparing to receive data\n");
+      MPI_Probe(MPI_ANY_SOURCE, RESULT, MPI_COMM_WORLD, &status);
+      source = status.MPI_SOURCE;
+      if(source != MASTER) {
+	MPI_Recv(&ima[source * nlines * w],
+		 nlines * w,
+		 MPI_CHAR,
+		 source,
+		 RESULT,
+		 MPI_COMM_WORLD,
+		 &status);
+	fprintf( stderr, "Received data from %d.\n", source);
+      }
+    }
+
+    fprintf(stderr, "-- End of transmission.\n");
+
+    /* Sauvegarde de la grille dans le fichier resultat "mandel.ras" */
+    sauver_rasterfile( "mandel.akraus.ras", w, h, ima);
+  } else {
+    fprintf( stderr, "(%d) Preparing to send data\n", rank);
+    MPI_Send(ima, w * nlines, MPI_CHAR, MASTER, RESULT, MPI_COMM_WORLD);
+  }
 
   MPI_Finalize();
   
@@ -320,9 +359,5 @@ int main(int argc, char *argv[]) {
 	   fin - debut);
   fprintf( stdout, "%g\n", fin - debut);
 
-  /* Sauvegarde de la grille dans le fichier resultat "mandel.ras" */
-  sauver_rasterfile( "mandel.akraus.ras", w, h, ima);
-
   return 0;
 }
-
