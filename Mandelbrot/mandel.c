@@ -267,16 +267,21 @@ int main(int argc, char *argv[]) {
   }
   
   /* Traitement de la grille point par point */
-  y = ymin; 
-  for (i = 0; i < h; i++) {	
-    x = xmin;
-    for (j = 0; j < w; j++) {
-      // printf("%d\n", xy2color( x, y, prof));
-      // printf("(x,y)=(%g;%g)\t (i,j)=(%d,%d)\n", x, y, i, j);
-      *pima++ = xy2color( x, y, prof); 
-      x += xinc;
+#pragma omp parallel
+  {
+#pragma omp for private(j, pima, x, y) schedule(static)
+    for (i = 0; i < h; i++) {
+      y = ymin + i*yinc;
+      pima = &ima[i*w];
+      x = xmin;
+      for (j = 0; j < w; j++) {
+	// printf("%d\n", xy2color( x, y, prof));
+	// printf("(x,y)=(%g;%g)\t (i,j)=(%d,%d)\n", x, y, i, j);
+	*pima++ = xy2color( x, y, prof);
+	x += xinc;
+      }
+      y += yinc;
     }
-    y += yinc; 
   }
   
   /* fin du chronometrage */
