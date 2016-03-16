@@ -1,5 +1,5 @@
 /*
- * Programmation Parallèle - Mars 2016
+ * Programmation ParallÃ¨le - Mars 2016
  * ENSG / IGN 
  * by Ahmad AUDI 
  * Calcul de convolution sur une image.
@@ -18,11 +18,11 @@
 
 /** 
  * \struct Raster
- * Structure décrivant une image au format Sun Raster
+ * Structure dÃ©crivant une image au format Sun Raster
  */
 
 typedef struct {
-  struct rasterfile file;  ///< Entête image Sun Raster
+  struct rasterfile file;  ///< EntÃªte image Sun Raster
   unsigned char rouge[256],vert[256],bleu[256];  ///< Palette de couleur
   unsigned char *data;    ///< Pointeur vers l'image
 } Raster;
@@ -42,7 +42,7 @@ double my_gettimeofday(){
 /**
  * Cette procedure convertit un entier LINUX en un entier SUN 
  *
- * \param i pointeur vers l'entier à convertir
+ * \param i pointeur vers l'entier Ã  convertir
  */
 
 void swap(int *i) {
@@ -59,15 +59,15 @@ void swap(int *i) {
  * \brief Lecture d'une image au format Sun RASTERFILE.
  *
  * Au retour de cette fonction, la structure r est remplie
- * avec les données liée à l'image. Le champ r.file contient
+ * avec les donnÃ©es liÃ©e Ã  l'image. Le champ r.file contient
  * les informations de l'entete de l'image (dimension, codage, etc).
- * Le champ r.data est un pointeur, alloué par la fonction
+ * Le champ r.data est un pointeur, allouÃ© par la fonction
  * lire_rasterfile() et qui contient l'image. Cette espace doit
- * être libéré après usage.
+ * Ãªtre libÃ©rÃ© aprÃ¨s usage.
  *
  * \param nom nom du fichier image
  * \param r structure Raster qui contient l'image
- *  chargée en mémoire
+ *  chargÃ©e en mÃ©moire
  */
 
 void lire_rasterfile(char *nom, Raster *r) {
@@ -140,10 +140,10 @@ void sauve_rasterfile(char *nom, Raster *r)     {
 }
 
 /**
- * Réalise une division d'entiers plus précise que
- * l'opérateur '/'.
+ * RÃ©alise une division d'entiers plus prÃ©cise que
+ * l'opÃ©rateur '/'.
  * Remarque : la fonction rint provient de la librairie 
- * mathématique.
+ * mathÃ©matique.
  */
 
 unsigned char division(int numerateur,int denominateur) {
@@ -164,11 +164,11 @@ typedef enum {
   CONVOL_MOYENNE2, ///< Filtre moyenneur central
   CONVOL_CONTOUR1, ///< Laplacien
   CONVOL_CONTOUR2, ///< Max gradient
-  CONVOL_MEDIAN    ///< Filtre médian
+  CONVOL_MEDIAN    ///< Filtre mÃ©dian
 } filtre_t;
 
 /**
- * Réalise une opération de convolution avec un noyau prédéfini sur
+ * RÃ©alise une opÃ©ration de convolution avec un noyau prÃ©dÃ©fini sur
  * un point.
  *
  * \param choix type de noyau pour la convolution :
@@ -176,11 +176,11 @@ typedef enum {
  *  - CONVOL_MOYENNE2 : filtre moyenneur avec un poid central plus fort
  *  - CONVOL_CONTOUR1 : filtre extracteur de contours (laplacien)
  *  - CONVOL_CONTOUR2 : filtre extracteur de contours (max des composantes du gradient)
- *  - CONVOL_MEDIAN : filtre médian (les 9 valeurs sont triées et la valeur
- *     médiane est retournée).
+ *  - CONVOL_MEDIAN : filtre mÃ©dian (les 9 valeurs sont triÃ©es et la valeur
+ *     mÃ©diane est retournÃ©e).
  * \param NO,N,NE,O,CO,E,SO,S,SE: les valeurs des 9 points
- *  concernés pour le calcul de la convolution (cette dernière est
- *  formellement une combinaison linéaire de ces 9 valeurs).
+ *  concernÃ©s pour le calcul de la convolution (cette derniÃ¨re est
+ *  formellement une combinaison linÃ©aire de ces 9 valeurs).
  * \return la valeur de convolution.
  */
 
@@ -233,7 +233,7 @@ unsigned char filtre( filtre_t choix,
 }
 
 /**
- * Convolution d'une image par un filtre prédéfini
+ * Convolution d'une image par un filtre prÃ©dÃ©fini
  * \param choix choix du filtre (voir la fonction filtre())
  * \param tab pointeur vers l'image
  * \param nbl, nbc dimension de l'image
@@ -265,7 +265,7 @@ int convolution( filtre_t choix, unsigned char tab[],int nbl,int nbc) {
   
   /* Recopie de l'image apres traitement dans l'image initiale,
    * On remarquera que la premiere, la derniere ligne, la premiere
-   * et la derniere colonne ne sont pas copiées (ce qui force a faire
+   * et la derniere colonne ne sont pas copiÃ©es (ce qui force a faire
    * la copie ligne par ligne). */
   for( i=1; i<nbl-1; i++){
     memcpy( tab+nbc*i+1, tmp+nbc*i+1, (nbc-2)*sizeof(unsigned char));
@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
       
-  /* Saisie des paramètres */
+  /* Saisie des paramÃ¨tres */
   filtre = atoi(argv[2]);
   nbiter = atoi(argv[3]);
         
