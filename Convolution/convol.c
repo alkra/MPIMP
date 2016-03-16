@@ -72,7 +72,6 @@ void swap(int *i) {
 
 void lire_rasterfile(char *nom, Raster *r) {
   FILE *f;
-  int i;
     
   if( (f=fopen( nom, "r"))==NULL) {
     fprintf(stderr,"erreur a la lecture du fichier %s\n", nom);
@@ -113,7 +112,6 @@ void lire_rasterfile(char *nom, Raster *r) {
 
 void sauve_rasterfile(char *nom, Raster *r)     {
   FILE *f;
-  int i;
   
   if( (f=fopen( nom, "w"))==NULL) {
     fprintf(stderr,"erreur a l'ecriture du fichier %s\n", nom);
@@ -274,7 +272,9 @@ int convolution( filtre_t choix, unsigned char tab[],int nbl,int nbc) {
   } /* for i */
   
   /* Liberation memoire du tampon intermediaire : */
-  free(tmp);   
+  free(tmp);
+
+  return EXIT_SUCCESS;
 }
 
 
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
   double debut, fin;
 
   /* Variables de boucle */
-  int 	i,j;
+  int 	i;
 
   if (argc != 4) {
     fprintf( stderr, usage, argv[0]);

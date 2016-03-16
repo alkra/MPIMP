@@ -1,0 +1,18 @@
+# © Alban Kraus 2016
+# École nationale des sciences géographiques
+# 6-8 avenue Blaise Pascal - Champs-sur-Marne
+# 77455 MARNE-LA-VALLÉE CEDEX 2
+#
+# TP de Ahmad Audi
+#
+# This is Git's ignore list
+
+# Emacs backups
+*~
+
+# Executables and executable-related
+*.akraus*
+*.o
+
+# Images
+*.ras
