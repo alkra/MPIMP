@@ -14,18 +14,18 @@ default: release
 
 # Compilation
 mandel.od: mandel.c rasterfile.h
-	mpicc -c -g -Wall -Wextra mandel.c
+	mpicc -c -fopenmp -g -Wall -Wextra mandel.c
 
 mandel.o: mandel.c rasterfile.h
-	mpicc -c -O mandel.c
+	mpicc -c -fopenmp -O mandel.c
 
 
 # Link
 release: mandel.o
-	mpicc -o mandel.akraus mandel.o -lm
+	mpicc -fopenmp -o mandel.akraus mandel.o -lm
 
 debug: mandel.od
-	mpicc -o mandel.akraus mandel.o -lm
+	mpicc -fopenmp -o mandel.akraus mandel.o -lm
 
 # Run
 

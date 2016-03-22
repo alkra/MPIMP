@@ -302,13 +302,16 @@ int main(int argc, char *argv[]) {
   }
 
   /* Traitement de la grille point par point */
+#pragma omp parallel
   {
     int  i, j;
     double x, y;
 
-    y = ymin + yinc * rank * nlines;
     fprintf(stderr, "(%d) Begin computation.\n", rank);
+#pragma omp for private(j, pima, x, y) schedule(static)
     for (i = 0; i < nlines; i++) {
+      y = ymin + yinc * rank * nlines + yinc * i;
+      pima = &ima[i*w];
       x = xmin;
       for (j = 0; j < w; j++) {
 	*pima++ = xy2color( x, y, prof); 
