@@ -319,33 +319,26 @@ int main(int argc, char *argv[]) {
 
     for(current_block = nproc-1; current_block < nblocks + nproc-1; current_block++) {
       /* Réception du signal de fin de calcul */
-      fprintf( stderr, "Ready ");
 
       MPI_Probe(MPI_ANY_SOURCE, RESULT, MPI_COMM_WORLD, &status);
       source = status.MPI_SOURCE;
       if(source != MASTER) {
-	fprintf( stderr, "to receive from %d ", source);
 	MPI_Recv(&bloc, 1, MPI_INT, source, RESULT, MPI_COMM_WORLD, &status);
 	if(bloc >= 0 && bloc < nblocks) {
 	  /* Réception des données */
-	  fprintf( stderr, "bloc %d ", bloc);
 	  MPI_Recv(&ima[bloc * nlines * w], nlines * w, MPI_CHAR, source, DATA, MPI_COMM_WORLD, &status);
-	  fprintf( stderr, "OK. ");
 
 	  /* Envoi de données */
 	  MPI_Send(&current_block, 1, MPI_INT, source, WORK, MPI_COMM_WORLD);
-	  fprintf( stderr, "Sent block %d.\n", current_block);
 	} else {
-	  fprintf( stderr, "Invalid bloc received. Exiting.");
+	  fprintf( stderr, "Invalid bloc received. Exiting.\n");
 	  return EXIT_FAILURE;
 	}
       } else {
-	fprintf( stderr, "Received message from master node. Exiting.");
+	fprintf( stderr, "Received message from master node. Exiting.\n");
 	return EXIT_FAILURE;
       }
     }
-
-    fprintf(stderr, "-- End of transmission.\n");
 
     /* Sauvegarde de la grille dans le fichier resultat "mandel.ras" */
     sauver_rasterfile( "mandel.akraus.ras", w, h, ima);
@@ -354,21 +347,19 @@ int main(int argc, char *argv[]) {
   else {
     MPI_Status status;
     unsigned char* pima;
-    int bloc = rank-1;
-    while(bloc < nblocks) {
+    int block = rank-1;
+    while(block < nblocks) {
       int  i, j;
       double x, y;
 
       /* Traitement de la grille point par point */
       pima = ima;
-      y = ymin + yinc * bloc * nlines;
-      fprintf(stderr, "(%d) Begin computation of block %d\n", rank, bloc);
+      y = ymin + yinc * block * nlines;
+      fprintf(stderr, "(%d) Begin computation of block %d\n", rank, block);
 
       for (i = 0; i < nlines; i++) {
 	x = xmin;
 	for (j = 0; j < w; j++) {
-	  // printf("%d\n", xy2color( x, y, prof));
-	  // printf("(x,y)=(%g;%g)\t (i,j)=(%d,%d)\n", x, y, i, j);
 	  *pima++ = xy2color( x, y, prof);
 	  x += xinc;
 	}
@@ -378,11 +369,11 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "(%d) End computation\n", rank);
 
       /* Sending result signal */
-      MPI_Send(&bloc, 1, MPI_INT, MASTER, RESULT, MPI_COMM_WORLD);
+      MPI_Send(&block, 1, MPI_INT, MASTER, RESULT, MPI_COMM_WORLD);
       /* Sending data */
       MPI_Send(ima, w * nlines, MPI_CHAR, MASTER, DATA, MPI_COMM_WORLD);
-      /* Receive next bloc to work on */
-      MPI_Recv(&bloc, 1, MPI_INT, MASTER, WORK, MPI_COMM_WORLD, &status);
+      /* Receive next block to work on */
+      MPI_Recv(&block, 1, MPI_INT, MASTER, WORK, MPI_COMM_WORLD, &status);
     }
 
     fprintf(stderr, "-- (%d) Bye!\n", rank);
