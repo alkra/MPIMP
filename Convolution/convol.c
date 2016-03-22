@@ -251,26 +251,32 @@ int convolution( filtre_t choix, unsigned char tab[],int nbl,int nbc) {
     printf("Erreur dans l'allocation de tmp dans convolution \n");
     return 1;
   }
-  
-  /* on laisse tomber les bords */
-  for(i=1 ; i<nbl-1 ; i++) {
-    for(j=1 ; j<nbc-1 ; j++){
-      tmp[i*nbc+j] = filtre(
-			    choix,
-			    tab[(i+1)*nbc+j-1],tab[(i+1)*nbc+j],tab[(i+1)*nbc+j+1],
-			    tab[(i  )*nbc+j-1],tab[(i)*nbc+j],tab[(i)*nbc+j+1],
-			    tab[(i-1)*nbc+j-1],tab[(i-1)*nbc+j],tab[(i-1)*nbc+j+1]);
-    } /* for j */
-  } /* for i */
-  
-  /* Recopie de l'image apres traitement dans l'image initiale,
-   * On remarquera que la premiere, la derniere ligne, la premiere
-   * et la derniere colonne ne sont pas copiées (ce qui force a faire
-   * la copie ligne par ligne). */
-  for( i=1; i<nbl-1; i++){
-    memcpy( tab+nbc*i+1, tmp+nbc*i+1, (nbc-2)*sizeof(unsigned char));
-  } /* for i */
-  
+
+#pragma omp parallel
+  {
+    /* on laisse tomber les bords */
+#pragma omp for private(j) schedule(runtime)
+    for(i=1 ; i<nbl-1 ; i++) {
+      for(j=1 ; j<nbc-1 ; j++){
+        tmp[i*nbc+j] = filtre(
+                              choix,
+                              tab[(i+1)*nbc+j-1],tab[(i+1)*nbc+j],tab[(i+1)*nbc+j+1],
+                              tab[(i  )*nbc+j-1],tab[(i)*nbc+j],tab[(i)*nbc+j+1],
+                              tab[(i-1)*nbc+j-1],tab[(i-1)*nbc+j],tab[(i-1)*nbc+j+1]);
+      } /* for j */
+    } /* for i */
+
+
+    /* Recopie de l'image apres traitement dans l'image initiale,
+     * On remarquera que la premiere, la derniere ligne, la premiere
+     * et la derniere colonne ne sont pas copiées (ce qui force a faire
+     * la copie ligne par ligne). */
+#pragma omp for schedule(runtime)
+    for( i=1; i<nbl-1; i++){
+      memcpy( tab+nbc*i+1, tmp+nbc*i+1, (nbc-2)*sizeof(unsigned char));
+    } /* for i */
+  }
+
   /* Liberation memoire du tampon intermediaire : */
   free(tmp);
 

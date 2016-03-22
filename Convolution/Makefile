@@ -14,18 +14,18 @@ default: release
 
 # Compilation
 convol.od: convol.c rasterfile.h
-	gcc -c -g -Wall -Wextra convol.c
+	gcc -c -fopenmp -g -Wall -Wextra convol.c
 
 convol.o: convol.c rasterfile.h
-	gcc -c -O convol.c
+	gcc -c -fopenmp -O convol.c
 
 
 # Link
 release: convol.o
-	gcc -o convol.akraus convol.o -lm
+	gcc -fopenmp -o convol.akraus convol.o -lm
 
 debug: convol.od
-	gcc -o convol.akraus convol.o -lm
+	gcc -fopenmp -o convol.akraus convol.o -lm
 
 # Run
 
