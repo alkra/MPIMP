@@ -1,0 +1,219 @@
+#!/bin/bash
+
+# Declare variables
+hostfile=hosts
+host=
+user=$(id -un)
+path=
+datapath=../Donnees
+compile=release
+processes=1
+
+# Parse options (space-separated)
+while [[ $# > 0 ]]
+do
+    opt="$1"
+    case $opt in
+	# Help options
+	-h|--help)
+	    echo "Usage: $0 [-D datapath] [-p path] [-u user] [-h host] [-H hostfile] [-t target] [<processes>|--] <args>"
+	    echo " "
+	    echo "arguments:"
+	    echo ""
+	    echo "args"
+	    echo "    Arguments that will be passed to each run of the program."
+	    echo ""
+	    echo "processes"
+	    echo "    Specify the number of processes to run. This argument will be passed to mpirun."
+	    echo "    If you do not want to specify the number of processes, you MUST provide the -- tag."
+	    echo "    Default: 1"
+	    echo ""
+	    echo ""
+	    echo "Other options:"
+	    echo ""
+	    echo "-p|--path remote/path"
+	    echo "    Path in which install then run the binary, without the trailing slash."
+	    echo "    Default: <ssh drop-in directory>."
+	    echo ""
+            echo "-D|--data-path local/path"
+            echo "    Path in which search for data files to be sent to remotes, without the trailing slash."
+            echo "    Default: ../Donnees"
+            echo ""
+	    echo "-u|--user user"
+	    echo "    Specify the user to use when connecting to hosts. You may be prompted for a password."
+	    echo "    Be careful when using password-protected accounts on a MPI cluster, as MPI processes cannot ask for a password."
+	    echo "    Default: current username, as return by id -un"
+	    echo ""
+	    echo "-h|--host host"
+	    echo "    Specify the master host. The master host is the one from which the program will be compiled, and diffused."
+	    echo "    Default: first entry in the 'hosts' file."
+	    echo ""
+	    echo "-H|--hostfile <hostfile>"
+	    echo "    Host file to provide to MPI. It also will be used when setting the default host."
+	    echo "    Default: hosts"
+	    echo ""
+	    echo "-t|--compile-target <makefile target>"
+	    echo "    Specify the make target used to compile the program remotely."
+	    echo "    Default: release"
+	    exit 2
+	    ;;
+
+	# Mandatory options
+
+	# Other options
+	-p|--path)
+	    shift
+	    path=$1
+	    ;;
+        -D|--data-path)
+            shift
+            datapath=$1
+            ;;
+	-u|--user)
+	    shift
+	    user=$1
+	    ;;
+	-h|--host|--remote)
+	    shift
+	    host=$1
+	    ;;
+	-H|--hostfile)
+	    shift
+	    hostfile=$1
+	    ;;
+	-t|--compile-target)
+	    shift
+	    compile=$1
+	    ;;
+	--)
+	    shift
+	    break
+	    ;;
+	-*)
+	    echo "Unkown option: $1"
+	    exit 1
+	    ;;
+	*)
+	    processes=$1
+	    shift
+	    break
+	    ;;    
+    esac
+    shift
+done
+
+# Set up other defaults
+if [ "x$path" = "x" ]
+then
+    path=/home/${user}/
+fi
+if [ "x$host" = "x" ]
+then
+    host=$(head -n 1 $hostfile)
+fi
+
+function runlocalcmd {
+    echo $*
+    $*
+    if [ $? -gt 0 ]
+    then
+	exit 1
+    fi
+}
+
+function runcmd {
+    runlocalcmd "ssh ${user}@${host} cd ${path} && $*"
+}
+
+function sendfile {
+    runlocalcmd "scp $1 ${user}@${host}:${path}"
+}
+
+function getfile {
+    runlocalcmd "scp ${user}@${host}:${path}$1 ./"
+}
+
+function sendsourcefile {
+    if [ -e $1 ]
+    then
+	if [ -e .sha/$1 ]
+	then
+	    if [ "$(cat .sha/$1)" != "$(shasum $1)" ] 
+	    then
+		sendfile $1
+		COMPILE=true
+		shasum $1 > .sha/$1
+	    fi
+	else
+	    sendfile $1
+	    COMPILE=true
+	    shasum $1 > .sha/$1
+	fi
+    else
+	echo "Warning: could not retrieve source file $1 locally."
+    fi
+}
+
+# Send source files to remote
+if [ ! -d .sha ]
+then
+    runlocalcmd mkdir .sha
+fi
+COMPILE=
+for src in rasterfile.h mandel.c Makefile $hostfile
+do
+    echo "Preparing to send source file $src"
+    if [ -d .sha ]
+    then
+	sendsourcefile $src
+    else
+	sendfile $src
+    fi
+done
+
+
+# Compile
+if [ "x$COMPILE" != "x" ]
+then
+    echo "Preparing to compile"
+    runcmd "make $compile"
+    
+    for h in $(cat $hostfile)
+    do
+	runcmd "scp ${user}@${host}:${path}mandel.akraus ${user}@${h}:${path}"
+    done
+fi
+
+
+# Send data
+function senddata {
+    if [ -e ${datapath}/$1 ]
+    then
+	sendfile ${datapath}/$1
+	echo $1 >> .sent_data
+    else
+	echo "Warning: data file $1 not found."
+    fi
+}
+
+for data in
+do
+    echo "Preparing to send datafile $data"
+    if [ -e .sent_data ]
+    then
+	if [ $(grep -c $data .sent_data) -eq 0 ]
+	then
+	    senddata $data
+	fi
+    else
+	senddata $data
+    fi
+done
+
+# Run
+echo "Preparing to run"
+runcmd "mpirun -n $processes -hostfile $hostfile mandel.akraus $*"
+
+# Get result
+echo "Preparing to get result."
+getfile mandel.akraus.ras

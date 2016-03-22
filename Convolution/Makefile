@@ -14,18 +14,18 @@ default: release
 
 # Compilation
 convol.od: convol.c rasterfile.h
-	gcc -c -g -Wall -Wextra convol.c
+	mpicc -c -g -Wall -Wextra convol.c
 
 convol.o: convol.c rasterfile.h
-	gcc -c -O convol.c
+	mpicc -c -O convol.c
 
 
 # Link
 release: convol.o
-	gcc -o convol.akraus convol.o -lm
+	mpicc -o convol.akraus convol.o -lm
 
 debug: convol.od
-	gcc -o convol.akraus convol.o -lm
+	mpicc -o convol.akraus convol.o -lm
 
 # Run
 
@@ -37,3 +37,4 @@ clean:
 rebuild: clean debug
 
 .PHONY : convol.od release debug clean rebuild
+

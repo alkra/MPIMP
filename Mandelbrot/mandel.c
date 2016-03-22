@@ -11,9 +11,12 @@
 #include <string.h>     /* pour memset */
 #include <math.h>
 #include <sys/time.h>
+#include <mpi/mpi.h>
 
 #include "rasterfile.h"
 
+#define MASTER 0
+#define RESULT 0
 
 
 char info[] = "\
@@ -214,22 +217,20 @@ int main(int argc, char *argv[]) {
   double xmin, ymin;
   double xmax, ymax;
   /* Dimension de l'image */
-  int w,h;
+  int w,h, nblocks, nlines;
   /* Pas d'incrementation */
   double xinc, yinc;
   /* Profondeur d'iteration */
   int prof;
   /* Image resultat */
   unsigned char	*ima, *pima;
-  /* Variables intermediaires */
-  int  i, j;
-  double x, y;
   /* Chronometrage */
   double debut, fin;
+  /* MPI */
+  int rank, nproc;
 
   /* debut du chronometrage */
   debut = my_gettimeofday();
-
 
   if( argc == 1) fprintf( stderr, "%s\n", info);
   
@@ -258,26 +259,60 @@ int main(int argc, char *argv[]) {
   fprintf( stderr, "Prof: %d\n",  prof);
   fprintf( stderr, "Dim image: %dx%d\n", w, h);
   
-  /* Allocation memoire du tableau resultat */  
-  pima = ima = (unsigned char *)malloc( w*h*sizeof(unsigned char));
-  
-  if( ima == NULL) {
-    fprintf( stderr, "Erreur allocation mémoire du tableau \n");
-    return 0;
+  if (MPI_Init(&argc, &argv) != 0) {
+    fprintf( stderr, "Unable to start MPI\n");
+    return EXIT_FAILURE;
+  }
+
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  fprintf( stderr, "Process number: %d\n", nproc);
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  {
+    char processor_name[30] = "";
+    int processor_name_length = 30;
+    MPI_Get_processor_name(processor_name, &processor_name_length);
+    fprintf( stderr, "(%d) On host %s.\n", rank, processor_name);
+  }
+
+  if(rank == MASTER) {
+    /* Allocation memoire du tableau resultat */  
+    pima = ima = (unsigned char *)malloc( w*h*sizeof(unsigned char));
+      
+    if( ima == NULL) {
+      fprintf( stderr, "Erreur allocation mémoire du tableau \n");
+      return EXIT_FAILURE;
+    }
+  } else {
+    // Allocation de la sous-image
+    pima = ima = (unsigned char *)malloc( w*nlines*sizeof(unsigned char));
+    
+    if(ima == NULL) {
+      fprintf( stderr, "Unable to allocate memory for sub-image\n");
+      return EXIT_FAILURE;
+    }
   }
   
   /* Traitement de la grille point par point */
-  y = ymin; 
-  for (i = 0; i < h; i++) {	
-    x = xmin;
-    for (j = 0; j < w; j++) {
-      // printf("%d\n", xy2color( x, y, prof));
-      // printf("(x,y)=(%g;%g)\t (i,j)=(%d,%d)\n", x, y, i, j);
-      *pima++ = xy2color( x, y, prof); 
-      x += xinc;
+  {
+    int  i, j;
+    double x, y;
+
+    y = ymin;
+    fprintf(stderr, "(%d) Begin computation.\n", rank);
+    for (i = 0; i < h; i++) {	
+      x = xmin;
+      for (j = 0; j < w; j++) {
+	*pima++ = xy2color( x, y, prof); 
+	x += xinc;
+      }
+      y += yinc; 
     }
-    y += yinc; 
   }
+
+  fprintf(stderr, "(%d) End computation\n", rank);
+
+  MPI_Finalize();
   
   /* fin du chronometrage */
   fin = my_gettimeofday();
@@ -287,6 +322,7 @@ int main(int argc, char *argv[]) {
 
   /* Sauvegarde de la grille dans le fichier resultat "mandel.ras" */
   sauver_rasterfile( "mandel.akraus.ras", w, h, ima);
-  
+
   return 0;
 }
+

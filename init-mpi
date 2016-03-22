@@ -1,0 +1,15 @@
+#!/bin/bash
+
+hostfile=Mandelbrot/hosts
+
+for host in $(cat $hostfile)
+do
+    scp $hostfile $host:~
+    ssh $host "ssh-keygen -t rsa -b 1024"
+    ssh $host <<EOF
+for host in \$(cat $hostfile)
+do
+    ssh-copy-id \$host
+done
+EOF
+done

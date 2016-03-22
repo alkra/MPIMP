@@ -11,10 +11,14 @@
 #include <math.h>   /* pour le rint */
 #include <string.h> /* pour le memcpy */
 #include <time.h>   /* chronometrage */
+#include <mpi.h>
 
 #include "rasterfile.h"
 
 #define MAX(a,b) ((a>b) ? a : b)
+
+#define MASTER 0
+#define TAG_LINE_EXCHANGE 1
 
 /** 
  * \struct Raster
@@ -292,7 +296,10 @@ int main(int argc, char *argv[]) {
 
   /* Variables se rapportant a l'image elle-meme */
   Raster r;
+  int    param[2] = {0, 0};
   int    w, h;	/* nombre de lignes et de colonnes de l'image */
+  int    h_local = 0; /* nombre de lignes à traiter */
+  unsigned char *image = NULL;
 
   /* Variables liees au traitement de l'image */
   int 	 filtre;		/* numero du filtre */
@@ -301,37 +308,122 @@ int main(int argc, char *argv[]) {
   /* Variables liees au chronometrage */
   double debut, fin;
 
-  /* Variables de boucle */
-  int 	i;
+  /* Variables liées à MPI */
+  int nproc = 0, rank = -1;
+  MPI_Status status;
+
+  /* Variables locales */
+  int  i;
 
   if (argc != 4) {
     fprintf( stderr, usage, argv[0]);
     return 1;
   }
-      
+
+  /* MPI Initialization */
+  if (MPI_Init(&argc, &argv) != 0) {
+    fprintf( stderr, "Unable to start MPI\n");
+    return EXIT_FAILURE;
+  }
+
+  MPI_Comm_size(MPI_COMM_WORLD, &nproc);
+  fprintf( stderr, "Process number: %d\n", nproc);
+  /*if (nproc < 2) {
+    fprintf( stderr, "Not enough processes\n");
+    return EXIT_FAILURE;
+    }*/
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  {
+    char processor_name[30] = "";
+    int processor_name_length = 30;
+    MPI_Get_processor_name(processor_name, &processor_name_length);
+    fprintf( stderr, "(%d) On host %s.\n", rank, processor_name);
+  }
+
   /* Saisie des paramètres */
   filtre = atoi(argv[2]);
   nbiter = atoi(argv[3]);
         
   /* Lecture du fichier Raster */
-  lire_rasterfile( argv[1], &r);
-  h = r.file.ras_height;
-  w = r.file.ras_width;
-    
+  if ( rank == MASTER ) {
+    /* Lecture du fichier Raster */
+    lire_rasterfile( argv[1], &r);
+    param[1] = r.file.ras_height;
+    param[0] = r.file.ras_width;
+  }
+
+  MPI_Bcast(param, 2, MPI_INT, MASTER, MPI_COMM_WORLD);
+
+  /* Récupération des paramètres */
+  w = param[0];
+  h = param[1];
+
+  /* Vérification du nombre de processus */
+  if( h % nproc != 0 ) {
+    fprintf( stderr, "Mauvais nombre de processus\n");
+    return EXIT_FAILURE;
+  }
+
+  /* Calcul des dimensions de travail */
+  h_local = h / nproc + (0 < rank ? 1 : 0) + (rank < nproc-1 ? 1 : 0);
+
+  /* Allocation dynamique */
+  if ( rank == MASTER ) {
+    image = r.data;
+  } else {
+    image = (unsigned char*)malloc(w * h_local * sizeof(unsigned char));
+    if( image == NULL) {
+      fprintf( stderr, "(%d) Failed to allocate memory for original image.\n", rank);
+      return EXIT_FAILURE;
+    }
+  }
+
+  { /* Envoi / réception de l'image */
+    unsigned char *image_recv = image + (rank > 0 ? w : 0);
+    MPI_Scatter(image     , w * h/nproc, MPI_CHAR, /* master only */
+		image_recv, w * h/nproc, MPI_CHAR,
+		MASTER, MPI_COMM_WORLD);
+  }
+
   /* debut du chronometrage */
   debut = my_gettimeofday();            
 
   /* La convolution a proprement parler */
   for(i=0 ; i < nbiter ; i++){
-    convolution( filtre, r.data, h, w);
+    /* Envoi / réception des lignes manquantes */
+    if( rank > 0 ) { /* Au processus précédent */
+      MPI_Send(image + w, w, MPI_CHAR,
+	       rank-1, TAG_LINE_EXCHANGE, MPI_COMM_WORLD);
+      MPI_Recv(image, w, MPI_CHAR,
+	       rank-1, TAG_LINE_EXCHANGE, MPI_COMM_WORLD,
+	       &status);
+    }
+    if( rank < nproc-1 ) { /* Au processus suivant */
+      MPI_Recv(image + (h_local-1)*w, w, MPI_CHAR,
+	       rank+1, TAG_LINE_EXCHANGE, MPI_COMM_WORLD,
+	       &status);
+      MPI_Send(image + (h_local-2)*w, w, MPI_CHAR,
+	       rank+1, TAG_LINE_EXCHANGE, MPI_COMM_WORLD);
+    }
+
+    /* Compute */
+    convolution( filtre, image, h_local, w);
   } /* for i */
+
+  /* Envoi du résultat */
+  MPI_Gather(image + w, w * h/nproc, MPI_CHAR,
+	image, w * h/nproc, MPI_CHAR, MASTER,
+	MPI_COMM_WORLD);
+
+  MPI_Finalize();
 
   /* fin du chronometrage */
   fin = my_gettimeofday();
   printf("Temps total de calcul : %g seconde(s) \n", fin - debut);
     
-    /* Sauvegarde du fichier Raster */
-  { 
+  /* Sauvegarde du fichier Raster */
+  if( rank == MASTER ) {
     char nom_sortie[100] = "";
     sprintf(nom_sortie, "post-convolution_filtre%d_nbIter%d.ras", filtre, nbiter);
     sauve_rasterfile(nom_sortie, &r);

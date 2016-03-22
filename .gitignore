@@ -14,5 +14,9 @@
 *.akraus*
 *.o
 
+# My data
+.sha/
+.sent_data
+
 # Images
 *.ras
