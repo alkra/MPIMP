@@ -7,12 +7,23 @@
 #
 # This is Git's ignore list
 
-# Emacs backups
-*~
-
 # Executables and executable-related
 *.akraus*
 *.o
 
+# LaTeX
+rapport.log
+rapport.pdf
+*.aux
+*.out
+*.toc
+
 # Images
+Rapport/data/
 *.ras
+
+# Emacs backups
+*~
+
+# KDE
+.directory

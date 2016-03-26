@@ -1,0 +1,2 @@
+# Better tokenisation for LaTeX
+*.tex    diff=tex

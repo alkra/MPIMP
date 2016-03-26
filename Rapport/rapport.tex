@@ -1,0 +1,171 @@
+%% Alban Kraus
+%% © 2016 École nationale des sciences géographiques
+%% 6-8 avenue Blaise Pascal - Champs-sur-Marne
+%% 77455 MARNE-LA-VALLÉE CEDEX 2
+
+\documentclass[a4paper, oneside, twocolumn, 12pt]{report}
+
+% Directories
+\newcommand\fragment{fragment}
+\newcommand\data{data}
+
+% French typesetting
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english, french]{babel}
+\usepackage{numprint}
+\usepackage{lmodern}
+
+% Meta-data
+\usepackage{color}
+\usepackage[
+  hyperindex=true,
+  bookmarks=true,
+  baseurl={https://github.com/alkra/MPIMP},
+  pdftitle={Rapport des TP de parallélisation},
+  pdfauthor={Alban Kraus},
+  pdfsubject={Parallélisation -- mars 2016},
+  pdfproducer={École nationale des sciences géographiques -- 6-8 avenue Blaise Pascal - Champs-sur-Marne -- 77455 MARNE-LA-VALLÉE CEDEX 2},
+  pdflang=fr-FR
+]{hyperref}
+
+\title{Rapport des TP de parallélisation}
+\author{Alban Kraus}
+\date{23 mars 2016}
+
+% Headings customization
+\usepackage{titlesec}
+
+\newcounter{question}
+\renewcommand\thesubsection{Q.~\arabic{question}}
+\titleformat{\subsection}[hang]{\normalfont\large\bfseries}{Question~\arabic{question}}{0.7em}{}{}
+\newcommand\question{\subsection{}}
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries\centering}{TP~\thechapter}{20pt}{\Huge}
+
+% Other packages (style - maths - graphics)
+\usepackage{framed}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage[scientific-notation=true]{siunitx}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.11}
+\pgfplotsset{width=7.5cm}
+\usepackage{tikz}
+\usepackage{transparent}
+\usepackage{graphicx}
+\usepackage{eso-pic}
+
+% First page's overlay
+\newcommand\BackgroundPic{%
+  \put(0, 0){%
+    \parbox[b][\paperheight]{\textwidth}{%
+      \transparent{0.3}%
+      \vfill%
+      \centering%
+      \lstset{%
+        basicstyle=\footnotesize,
+        showspaces=false
+      }%
+      \lstinputlisting[language=C, firstline=217, lastline=391]{\fragment/mandel.c}%
+      \vfill%
+    }%
+  }%
+}
+
+% Code
+\usepackage{listings}
+\definecolor{comments}{gray}{0.7}
+\definecolor{keywords}{rgb}{0.1, 0.1, 0.9}
+\definecolor{strings}{rgb}{0.8, 0.05, 0.7}
+\lstset{
+  commentstyle=\color{comments}\rmfamily,
+  keepspaces=true,
+  keywordstyle=\color{keywords},
+  stringstyle=\color{strings}
+}
+
+\usepackage[french, longend, ruled]{algorithm2e}
+% Constantes
+\SetKwData{MASTER}{MAÎTRE}
+
+% Entrées / sorties
+\SetKwInput{Variables}{Variables locales}
+\SetKwData{H}{h}
+\SetKwData{W}{w}
+\SetKwData{P}{nproc}
+\SetKwData{Rank}{rank}
+\SetKwData{Hlocal}{h\_local}
+\SetKwData{Ima}{ima}
+\SetKwData{Pima}{pima}
+\SetKwData{Xmin}{xmin}
+\SetKwData{Xmax}{xmax}
+\SetKwData{Ymin}{ymin}
+\SetKwData{Ymax}{ymax}
+\SetKwData{Xincr}{xincr}
+\SetKwData{Yincr}{yincr}
+
+% fonctions C
+\SetKwFunction{sizeof}{sizeof}
+\SetKwFunction{malloc}{malloc}
+
+% fonctions MPI
+\SetKwData{CommWorld}{MPI\_COMM\_WORLD}
+\SetKwData{Char}{MPI\_CHAR}
+\SetKwData{Int}{MPI\_INT}
+\SetKwFunction{Recv}{MPI\_Recv}
+\SetKwFunction{Send}{MPI\_Send}
+\SetKwData{AnySource}{MPI\_ANY\_SOURCE}
+\SetKwFunction{Probe}{MPI\_Probe}
+\SetKwData{Source}{MPI\_SOURCE}
+
+% Style
+\DontPrintSemicolon
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%
+% DOCUMENT %
+%%%%%%%%%%%%
+
+
+\begin{document}
+
+% Title page
+\twocolumn[
+\begin{@twocolumnfalse}
+  \input{\fragment/titlepage}
+\end{@twocolumnfalse}
+]
+
+\clearpage
+
+% Copyright notice
+\thispagestyle{empty}
+\twocolumn[
+\begin{@twocolumnfalse}
+  \vskip 0.8\textheight
+
+  \input{\fragment/copyright}
+\end{@twocolumnfalse}
+]
+
+\clearpage
+
+\tableofcontents
+
+
+% TP 1
+
+\chapter{Ensemble de Mandelbrot}
+
+
+\end{document}
+
