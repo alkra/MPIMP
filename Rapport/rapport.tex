@@ -166,6 +166,11 @@
 
 \chapter{Ensemble de Mandelbrot}
 
+\setcounter{question}{0}
+\loop\ifnum\arabic{question}<5
+\stepcounter{question}
+\input{mandelbrot/question-\arabic{question}}
+\repeat
 
 \end{document}
 
