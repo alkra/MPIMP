@@ -105,6 +105,9 @@
 \SetKwData{Ymax}{ymax}
 \SetKwData{Xincr}{xincr}
 \SetKwData{Yincr}{yincr}
+\SetKwData{Filtre}{filtre}
+\SetKwData{Niter}{nbiter}
+\SetKwData{R}{r}
 
 % fonctions C
 \SetKwFunction{sizeof}{sizeof}
@@ -116,9 +119,13 @@
 \SetKwData{Int}{MPI\_INT}
 \SetKwFunction{Recv}{MPI\_Recv}
 \SetKwFunction{Send}{MPI\_Send}
+\SetKwFunction{Bcast}{MPI\_Bcast}
+\SetKwFunction{Scatter}{MPI\_Scatter}
+\SetKwFunction{Gather}{MPI\_Gather}
 \SetKwData{AnySource}{MPI\_ANY\_SOURCE}
 \SetKwFunction{Probe}{MPI\_Probe}
 \SetKwData{Source}{MPI\_SOURCE}
+\SetKwData{Exchange}{TAG\_LINE\_EXCHANGE}
 
 % Style
 \DontPrintSemicolon
@@ -171,6 +178,12 @@
 \stepcounter{question}
 \input{mandelbrot/question-\arabic{question}}
 \repeat
+
+% TP 2
+
+\chapter{Convolution}
+
+\input{\fragment/rapport-convol}
 
 \end{document}
 

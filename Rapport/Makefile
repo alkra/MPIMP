@@ -21,6 +21,8 @@ sources=rapport.tex \
 	fragment/logo_ensg.png \
 	fragment/titlepage.tex \
 	fragment/copyright.tex \
+	fragment/Albert-Einstein.jpg \
+	fragment/rapport-convol.tex \
 	mandelbrot/question-1.tex \
 	mandelbrot/question-2.tex \
 	mandelbrot/question-3.tex \
@@ -36,7 +38,11 @@ data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/mandel-stat-proc-6-1000.csv data/mandel-stat-proc-6-5000.csv \
 	data/mandel-dyn-taille-1-2.csv data/mandel-dyn-prof-1-2.csv \
 	data/mandel-dyn-proc-1-1000.csv data/mandel-dyn-proc-1-5000.csv \
-	data/mandel-dyn-nblocks-1-1000.csv data/mandel-dyn-nblocks-1-5000.csv
+	data/mandel-dyn-nblocks-1-1000.csv data/mandel-dyn-nblocks-1-5000.csv \
+	data/convol-iter-1-0.csv data/convol-iter-1-2.csv data/convol-iter-1-4.csv \
+	data/convol-iter-6-0.csv data/convol-iter-6-2.csv data/convol-iter-6-4.csv \
+	data/convol-proc-1-0.csv data/convol-proc-1-4.csv \
+	data/convol-proc-6-0.csv data/convol-proc-6-4.csv
 
 
 # Cible primaire
@@ -119,6 +125,42 @@ data/mandel-dyn-nblocks-1-1000.csv: ${mandel}-dyn.csv
 
 data/mandel-dyn-nblocks-1-5000.csv: ${mandel}-dyn.csv
 	${line} '79p;81p;83p;85p' ${mandel}-dyn.csv > $@
+
+
+# Convol 1 machine
+
+data/convol-iter-1-0.csv: ${convol}-stat.csv
+	${line}  '2,11p' ${convol}-stat.csv > $@
+
+data/convol-iter-1-2.csv:  ${convol}-stat.csv
+	${line} '12,21p' ${convol}-stat.csv > $@
+
+data/convol-iter-1-4.csv:  ${convol}-stat.csv
+	${line} '22,31p' ${convol}-stat.csv > $@
+
+data/convol-proc-1-0.csv: ${convol}-stat.csv
+	${line} '32p;34p;36p;38p;40p;42p;44p;46p' ${convol}-stat.csv > $@
+
+data/convol-proc-1-4.csv: ${convol}-stat.csv
+	${line} '33p;35p;37p;39p;41p;43p;45p;47p' ${convol}-stat.csv > $@
+
+
+# Convol 6 machines
+
+data/convol-iter-6-0.csv: ${convol}-stat.csv
+	${line} '48,57p' ${convol}-stat.csv > $@
+
+data/convol-iter-6-2.csv:  ${convol}-stat.csv
+	${line} '58,67p' ${convol}-stat.csv > $@
+
+data/convol-iter-6-4.csv:  ${convol}-stat.csv
+	${line} '68,77p' ${convol}-stat.csv > $@
+
+data/convol-proc-6-0.csv: ${convol}-stat.csv
+	${line} '78p;80p;82p;84p;86p;88p;90p;92p' ${convol}-stat.csv > $@
+
+data/convol-proc-6-4.csv: ${convol}-stat.csv
+	${line} '79p;81p;83p;85p;87p;89p;91p;93p' ${convol}-stat.csv > $@
 
 
 clean:
