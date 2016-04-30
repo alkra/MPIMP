@@ -113,8 +113,8 @@ semblables.
       xlabel={Nombre de processus},
       ylabel={Temps de calcul (s)},
       legend style={
-        at={(1,0)},
-        anchor=south east
+        at={(1,1)},
+        anchor=north east
       }
       ]
       \addplot[blue] table [x index=1, y index=5,
@@ -127,13 +127,91 @@ semblables.
         \data/mandel-stat-proc-1-5000.csv%
       };
 
-      \legend{1000~px, 5000~px}
+      \addplot[blue, dashed, domain=0:100] { 0.292 };
+
+      \legend{1000~px, 5000~px, alg. seq.}
     \end{axis}
   \end{tikzpicture}
 
   \caption{Temps de calcul en fonction du nombre de processus ;
     prondeur constante, images de côté 1000~px ou 5000~px}
   \label{fig:mandel:stat:one-nproc}
+\end{figure}
+
+On appelle \emph{accélération} la fonction du nombre de processus
+$p$ considérant un problème de taille $n$~:
+
+$$ S(n, p) = \frac{T_{SEQ}(n)}{T_p(n)} $$
+
+Cette fonction est tracée à la figure
+\ref{fig:mandel:stat:accel-nproc} pour une image de côté
+1000~px\footnote{L'image de côté 5000~px aurait été intéressante, mais
+  je n'ai pas de mesures.}. On constate que, pour un nombre de
+processus deux fois supérieur au nombre de processeurs, l'accélération
+diminue. Cela correspond au moment où la courbe bleue pleine de la
+figure \ref{fig:mandel:stat:one-nproc} subit une rupture de pente. Sur
+cette dernière figure, on remarque aussi que cet algorithme
+parallélisé est toujours plus lent que l'algorithme séquentiel (courbe
+bleue en pointillés) ; cela peut s'expliquer par les temps
+d'initialisation de la bibliothèque (les mesures ne sont pas
+appropriées pour éliminer ce biais) et les communications entre les
+processus. Ce ralentissement dû au changement d'algorithme justifie
+aussi le fait que l'accélération soit plus petite que 1.
+
+\begin{figure}
+  \centering
+
+  \begin{tikzpicture}
+    \begin{axis}[
+      xlabel={Nombre de processus},
+      ylabel={Accélération},
+      ]
+      \addplot[blue] table [x index=1, y expr=0.292/\thisrowno{5},
+      col sep=semicolon, header=false]{%
+        \data/mandel-stat-proc-1-1000.csv%
+      };
+    \end{axis}
+  \end{tikzpicture}
+
+  \caption{Accélération en fonction du nombre de processus ;
+    prondeur constante, image de côté 1000~px}
+  \label{fig:mandel:stat:accel-nproc}
+\end{figure}
+
+L'efficacité d'un calcul à l'échelle $n$ avec $p$ processus est le
+rapport de l'accélération sur le nombre de processus, et permet de
+mesurer la contribution d'un processus.
+
+$$ E(n,p) = \frac{S(n,p)}{p} $$
+
+La courbe de la figure \ref{fig:mandel:stat:efficacite-nproc}
+correspond aux figures précédentes : en effet, on voit à la figure
+\ref{fig:mandel:stat:one-nproc} que, pour un petit nombre de
+processus, le temps de calcul n'évolue presque pas, alors que le
+nombre de processus croît : l'efficacité de chaque processus est donc
+moindre. Pour des grands nombres de processus, le temps de calcul
+augmente, ce qui marque une stabilisation de l'efficacité de chaque
+processus.
+
+\begin{figure}
+  \centering
+
+  \begin{tikzpicture}
+    \begin{axis}[
+      xlabel={Nombre de processus},
+      ylabel={Efficacité $ . 10^{-2}$},
+      ]
+      \addplot[blue] table [x index=1,
+      y expr=100*0.292/\thisrowno{5}/\thisrowno{1},
+      col sep=semicolon, header=false]{%
+        \data/mandel-stat-proc-1-1000.csv%
+      };
+    \end{axis}
+  \end{tikzpicture}
+
+  \caption{Efficacité en fonction du nombre de processus ;
+    prondeur constante, image de côté 1000~px}
+  \label{fig:mandel:stat:efficacite-nproc}
 \end{figure}
 
 Sur une seule machine, l'évolution du temps de calcul est bien visible
