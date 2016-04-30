@@ -23,6 +23,7 @@ sources=rapport.tex \
 	fragment/copyright.tex \
 	fragment/Albert-Einstein.jpg \
 	fragment/rapport-convol.tex \
+	fragment/rapport-openmp.tex \
 	mandelbrot/question-1.tex \
 	mandelbrot/question-2.tex \
 	mandelbrot/question-3.tex \
@@ -42,7 +43,8 @@ data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/convol-iter-1-0.csv data/convol-iter-1-2.csv data/convol-iter-1-4.csv \
 	data/convol-iter-6-0.csv data/convol-iter-6-2.csv data/convol-iter-6-4.csv \
 	data/convol-proc-1-0.csv data/convol-proc-1-4.csv \
-	data/convol-proc-6-0.csv data/convol-proc-6-4.csv
+	data/convol-proc-6-0.csv data/convol-proc-6-4.csv \
+	fragment/mp-seq-mandel.c fragment/mp-stat-mandel.c fragment/mp-seq-convol.c
 
 
 # Cible primaire
@@ -162,6 +164,26 @@ data/convol-proc-6-0.csv: ${convol}-stat.csv
 data/convol-proc-6-4.csv: ${convol}-stat.csv
 	${line} '79p;81p;83p;85p;87p;89p;91p;93p' ${convol}-stat.csv > $@
 
+
+# OpenMP
+fragment/mp-seq-mandel.c:
+	git checkout mp-seq -- ../Mandelbrot/mandel.c
+	git reset -q HEAD      ../Mandelbrot/mandel.c
+	cp ../Mandelbrot/mandel.c $@
+	sed -i '\|// printf|d' $@
+	git checkout        -- ../Mandelbrot/mandel.c
+
+fragment/mp-stat-mandel.c:
+	git checkout mp-static -- ../Mandelbrot/mandel.c
+	git reset -q HEAD         ../Mandelbrot/mandel.c
+	cp ../Mandelbrot/mandel.c $@
+	git checkout           -- ../Mandelbrot/mandel.c
+
+fragment/mp-seq-convol.c:
+	git checkout mp-seq -- ../Convolution/convol.c
+	git reset -q HEAD      ../Convolution/convol.c
+	cp ../Convolution/convol.c $@
+	git checkout        -- ../Convolution/convol.c
 
 clean:
 	-rm -f ${data}

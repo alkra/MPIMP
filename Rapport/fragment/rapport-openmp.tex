@@ -1,0 +1,103 @@
+%% Alban Kraus
+%% © 2016 École nationale des sciences géographiques
+%% 6-8 avenue Blaise Pascal - Champs-sur-Marne
+%% 77455 MARNE-LA-VALLÉE CEDEX 2
+
+\lstset{%
+  basicstyle=\footnotesize,
+}%
+
+\section{Questions}
+
+\subsection{Nombre de cœurs disponibles}
+
+\begin{quotation}
+  Vérifiez à l'aide de la commande \texttt{cat /proc/cpuinfo} le
+  nombre de cœurs disponible sur votre machine.
+\end{quotation}
+
+Cette commande affiche les statistiques de \emph{huit} cœurs de
+calcul~; il faut noter que l'hyperthreading est activé, donc il n'y a
+en réalité qu'un processeur à quatre cœurs.
+
+\subsection{Premier programme}
+
+\begin{quotation}
+  Utiliser un des programmes du cours pour tester votre
+  environnement. N'oubliez pas de positionner la variable
+  \texttt{OMP\_NUM\_THREADS} !
+\end{quotation}
+
+\subsection{Calcul de fractales}
+
+\begin{quotation}
+  Le fichier \texttt{mandel.c} contient le code source d'un programme
+  qui calcule les valeurs de l'espace de Mandelbrot.
+
+  Parallélisez ce programme avec OpenMP, puis exécutez-le avec des
+  équilibrages de charges statiques et dynamiques et avec différentes
+  valeurs de taille de bloc.
+\end{quotation}
+
+Pour paralléliser ce calcul, on utilise l'interface de compilation
+d'OpenMP (directives \texttt{\#pragma omp} et compilation avec
+\texttt{gcc -fopenmp}). En particulier, on ajoute une première ligne
+et un bloc d'accolades pour délimiter la zone à paralléliser, et on
+parallélise une boucle \texttt{for}.
+
+L'algorithme séquentiel a dû être légèrement modifié pour faire en
+sorte que les modifications des variables locales ne soient pas
+écrasées par les processus. Une variable \emph{privée} sera propre à
+chaque processus, et chaque processus peut avoir une valeur différente
+pour cette variable. Le code est affiché au listing
+\ref{lst:omp:mandel:seq}.
+
+\lstinputlisting[float=*, language=C, firstline=269,
+lastline=283, caption=Code de Mandelbrot modifié pour OpenMP,
+label=lst:omp:mandel:seq]{\fragment/mp-seq-mandel.c}
+
+On peut même combiner OpenMP et OpenMPI, de manière à paralléliser
+chaque processus. Par manque de temps, aucune mesure n'a pu être
+prise, ce qui est bien dommage : il faudrait mesurer la différence (ou
+plutôt, selon ma conjecture, l'absence de différence) entre six
+processus non threadés, un processus avec six threads, et six
+processus avec six threads sur une seule machine ; puis la différence
+entre six processus non threadés et six processus threadés sur six
+machines à huit cœurs. Le code est présenté au listing
+\ref{lst:omp:mandel:stat}.
+
+\lstinputlisting[float=*, language=C, firstline=304,
+  lastline=322,
+  caption=Code statique de Mandelbrot modifié pour OpenMP,
+  label=lst:omp:mandel:stat]{\fragment/mp-stat-mandel.c}
+
+Dans ce code, les lignes à générer sont partagées entre les processus,
+puis chaque processus les partage à nouveau entre ses fils d'exécution.
+
+
+
+\subsection{Convolution}
+
+\begin{quotation}
+  Le fichier \texttt{convol.c} contient le code source d'un programme
+  qui applique des opérateurs de convolution à des images.
+
+  Parallélisez ce programme avec OpenMP, puis exécutez-le avec des
+  équilibrages de charge statiques et dynamiques et avec différentes
+  valeurs de taille de bloc.
+\end{quotation}
+
+Le code modifié est présenté au listing \ref{lst:omp:convol:seq}. De
+même que dans le TP précédent, c'est la boucle qui applique le filtre
+qui est parallélisée. Sans raison véritable, j'ai parallélisé aussi la
+boucle réalisant les copies de mémoire-tampon.
+
+\lstinputlisting[float=*, language=C, linerange={255-267, 274-278},
+caption=Code de convolution modifié pour OpenMP,
+label=lst:omp:convol:seq
+]{\fragment/mp-seq-convol.c}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../rapport"
+%%% End:
