@@ -24,12 +24,11 @@ sources=rapport.tex \
 	fragment/Albert-Einstein.jpg \
 	fragment/rapport-convol.tex \
 	fragment/rapport-openmp.tex \
+	mandelbrot/question-0.tex \
 	mandelbrot/question-1.tex \
 	mandelbrot/question-2.tex \
 	mandelbrot/question-3.tex \
-	mandelbrot/question-4.tex \
-	mandelbrot/question-5.tex
-
+	mandelbrot/question-4.tex
 
 data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/mandel-seq-taille-ext.csv \

@@ -36,10 +36,10 @@
 % Headings customization
 \usepackage{titlesec}
 
-\newcounter{question}
+\newcounter{question}[chapter]
 \renewcommand\thesubsection{Q.~\arabic{question}}
-\titleformat{\subsection}[hang]{\normalfont\large\bfseries}{Question~\arabic{question}}{0.7em}{}{}
-\newcommand\question{\subsection{}}
+\titleformat{\subsection}[hang]{\stepcounter{question}\normalfont\large\bfseries}{Question~\arabic{question}}{0.7em}{}{}
+\newcommand\question{\subsection{\null}}
 \titleformat{\chapter}[display]{\normalfont\huge\bfseries\centering}{TP~\thechapter}{20pt}{\Huge}
 
 % Other packages (style - maths - graphics)
@@ -173,9 +173,7 @@
 
 \chapter{Ensemble de Mandelbrot}
 
-\setcounter{question}{0}
 \loop\ifnum\arabic{question}<5
-\stepcounter{question}
 \input{mandelbrot/question-\arabic{question}}
 \repeat
 
