@@ -1,0 +1,388 @@
+\newenvironment{git}{
+  \bigskip
+  \noindent%
+  \begin{tikzpicture}[scale=0.9]%
+}{%
+  \end{tikzpicture}
+  \bigskip
+}
+
+\gdef\ccommit[#1](#2,#3)#4{
+  (#2, #3) coordinate (#4)
+  circle[fill, radius=0.1]
+  node[outer sep=1pt, #1]{#4}
+}
+\gdef\commit(#1,#2)#3{
+  (#1, #2) coordinate (#3)
+  circle[fill, radius=0.1]
+  node[outer sep=1pt, above]{#3}
+}
+
+\newcommand{\bmaster}{
+  \commit(0, 0){A} node[outer sep=3pt, below]{v0.0} --
+  \commit(1, 0){B} node[outer sep=3pt, below]{v0.1} --
+  \commit(5, 0){F} --
+  \commit(6, 0){I} node[outer sep=3pt, below]{v1.0}
+                   node[outer sep=3pt, right]{\emph{master}}
+}
+
+\newcommand{\balpha}{
+  (B) --
+  \commit(2, -1){C} --
+  \commit(3, -1){D} --
+  \commit(4, -1){E} node[outer sep=3pt, right]{\emph{alpha}} --
+  (F)
+}
+
+\newcommand{\bbeta}{
+  (B) --
+  \commit(2.5, -2){G} --
+  \commit(4, -2){H} node[outer sep=3pt, right]{\emph{beta}} --
+  (I)
+}
+
+\newcommand{\bbetaPrime}{
+  (D) --
+  \commit(4, -2){G'} --
+  \commit(5, -2){H'} node[outer sep=3pt, right]{\emph{beta}} --
+  (I)
+}
+
+\chapter{Arborescence \texttt{git}esque}
+\label{app:git}
+
+\section{À propos de Git}
+
+Git est un système de gestion de version. Il permet d'enregistrer
+l'état d'un dossier et de ses sous-dossiers, l'ensemble étant appelé
+\emph{dépôt}, à l'époque courante. Un tel enregistrement est appelé
+\emph{commit}. À partir de ces enregistrements, il est capable
+d'intégrer les changements effectués par un collègue qui utilisait une
+ancienne version, il permet de revenir en arrière, de voir
+l'historique des modifications...
+
+Un flot de travail couramment utilisé s'appuie sur plusieurs
+branches. On donne le nom de \emph{master} au fil des modifications
+faites par l'administrateur ; ces modifications correspondent à
+l'intégration des fonctionnalités développées par les collaborateurs.
+
+La figure suivante représente ce fil des modifications, où chaque
+point correspond à un commit numéroté par une lettre.
+
+\begin{git}
+  \draw[thick] \bmaster;
+\end{git}
+
+À partir de cette branche principale, un développeur doit implémenter
+une fonctionnalié $\alpha$ pour la version 1.0. Pour ce faire, il crée
+une nouvelle branche \emph{alpha}, sur laquelle il réalise trois
+commits. Il va ensuite soumettre son travail à l'administrateur, qui
+va vérifier que l'ensemble fonctionne toujours aussi bien (les tests
+passent), que le style de codage est propre, et va ensuite fusionner
+cette branche avec la branche principale. L'historique ressemble alors
+à ceci :
+
+\begin{git}
+  \draw[thick] \bmaster;
+  \draw[thick, red] \balpha;
+\end{git}
+
+En parallèle, un deuxième développeur implémente la fonctionnalité
+$\beta$. De même, l'administrateur, aidé du puissant al\-go\-ri\-thme
+de théorie des graphes de Git, va fusionner les modifications
+correspondantes dans la branche \emph{master}.
+
+\begin{git}
+  \draw[thick] \bmaster;
+  \draw[thick, red] \balpha;
+  \draw[thick, blue] \bbeta;
+\end{git}
+
+Une autre possibilité qu'offre git, que j'utilise abondamment pour ce
+projet, est la faculté d'intégrer des changements avant son
+travail. Par exemple, supposons que le deuxième développeur se rende
+compte qu'il a besoin du commit D pour implémenter sa
+fonctionnalité. Il va alors se \emph{rebaser} sur \emph{alpha}-D. Le
+graphe devient alors :
+
+\begin{git}
+  \draw[thick] \bmaster;
+  \draw[thick, red] \balpha;
+  \draw[thick, blue] \bbetaPrime;
+\end{git}
+
+Il faut noter qu'un des changements introduits par G a déjà pu être
+introduit par C ou D ; c'est pourquoi, lors d'un \emph{rebase}, les
+commits sont systématiquement renommés, et engendrent tous les
+conflits entre utilisateurs liés à la modification de l'historique.
+
+
+
+\section{Mon utilisation}
+
+Je suis tout seul sur ce projet. Je n'ai donc pas à me soucier
+d'éventuels collaborateurs, et suis libre de modifier l'historique à
+ma guise. J'utilise donc allègrement les \emph{rebase}, ce qui me
+permet d'avoir un dépôt dont l'historique est suffisamment simple pour
+être compréhensible par un humain, et très bien organisé.
+
+En effet, pour ce projet, on réalise diverses modifications, telles
+que la modification de l'algorithme pour réaliser un équilibrage de
+charges dynamique, l'ajout de directives OpenMP par-dessus,
+... Toutefois, certaines sont communes à plusieurs codes : par
+exemple, l'ajout de l'appel à \texttt{MPI\_Init} est commun à tous les
+codes MPI et MPI+MP.
+
+J'ai donc organisé les différents codes en un arbre, en figure
+\ref{fig:git:hierarchie}.
+
+\begin{figure*}
+  \centering
+
+  \begin{tikzpicture}
+    % MASTER
+    \draw[ultra thick]
+    \commit(0,0){git} --
+    \commit(2,0){codeProf} --
+    \commit(4,0){resultSeq};
+    \draw[thick, gray]
+    (resultSeq) --
+    \commit(6,0){rapportBase} --
+    \commit(8,0){rapport};
+    \draw[thin, gray] (8,0) -- (12,0) node[right]{\emph{master}};
+
+    % MP-SEQ
+    \draw[ultra thick, blue]
+    (codeProf) --
+    \commit(4,-1){MPseq} --
+    \commit(6,-1){resultMPseq};
+    \draw[thin, blue] (6,-1) -- (12,-1) node[right]{\emph{mp-seq}};
+
+    % MPI-MASTER
+    \draw[ultra thick, yellow]
+    (codeProf) --
+    \ccommit[below left](4, -6){MPIbase}
+    node[outer sep=3pt, below right, black]{
+      \parbox{10cm}{
+        \begin{description}
+        \item[Makefile] avec \texttt{mpicc} ;
+        \item[hosts] ;
+        \item[propagate] ;
+        \item[mandel.c, convol.c] code de base MPI.
+        \end{description}
+      }
+    };
+    \draw[thin, yellow] (4,-6) -- (12,-6) node[right]{\emph{mpi-master}};
+
+    % MPI-STATIC
+    \draw[ultra thick, green]
+    (MPIbase) --
+    \commit(6, -2){MPIstat} --
+    \commit(8.5, -2){resultMPIstat};
+    \draw[thin, green] (8.5,-2) -- (12,-2) node[right]{\emph{mpi-static}};
+
+    % MPI-MP-STATIC
+    \draw[ultra thick, cyan]
+    (MPIstat) --
+    \commit(8, -3){MPstat} --
+    \commit(10,-3){resultMPstat};
+    \draw[thin, cyan] (10,-3) -- (12,-3) node[right]{\emph{mp-static}};
+
+    % MPI-DYNAMIC
+    \draw[ultra thick, red]
+    (MPIbase) --
+    \commit(6, -4){MPIdyn} --
+    \commit(8.5,-4){resultMPIdyn};
+    \draw[thin, red] (8.5,-4) -- (12,-4) node[right]{\emph{mpi-dynamic}};
+
+    % MPI-MP-DYNAMIC
+    \draw[ultra thick, magenta]
+    (MPIdyn) --
+    \commit(8, -5){MPdyn} --
+    \commit(10,-5){resultMPdyn};
+    \draw[thin, magenta] (10,-5) -- (12,-5) node[right]{\emph{mp-dynamic}};
+
+  \end{tikzpicture}
+
+  \paragraph{Description des commits :}
+  \begin{tabularx}{\textwidth}{r X}
+    git & Initialisation d'un dépôt vide et des fichiers propres à
+          Git\\
+    codeProf & Le code donnée par le prof, modulo quelques
+               modifications (encodage et noms de fichiers)\\
+    MPIbase & Code de base pour OpenMPI : initialisation, récupération
+              du rang, validation des arguments du programme, etc. +
+              fichiers mentionnés\\
+    MPIstat & Adaptation des codes du commit précédent pour un
+              équilibrage des charges statique\\
+    MPIdyn  & Idem, mais avec un équilibrage dynamique (uniquement
+              \texttt{mandel.c})\\
+    MP* & Code du commit * adapté pour OpenMP (parfois seulement
+           \texttt{mandel.c})\\
+    result* & Mesures de performance liées au code du commit *\\
+    rapportBase & Architecture du rapport : feuille de style,
+                  préambule, couverture, sous-dossiers, Makefile\\
+    rapport & Autres parties du rapport
+  \end{tabularx}
+
+  \caption{Organisation des différents codes}
+  \label{fig:git:hierarchie}
+\end{figure*}
+
+Puisqu'un commit enregistre l'état de tout un système de fichiers
+(dossier et sous-dossiers), cet arborescence ne correspond pas à des
+dossiers. Pour afficher le code de, par exemple, \texttt{mandel.c} en
+charges dynamiques, il faut (dans n'importe quel ordre) :
+
+\begin{itemize}
+\item demander à Git d'afficher la branche \emph{mpi-dynamic} :\\
+  \texttt{git checkout mpi-dynamic} ;\\ ainsi, le système de fichiers
+  est identique à l'état sauvegardé dans le dernier commit de la
+  branche \emph{mpi-dynamic} ;
+\item se déplacer dans le sous-dossier \texttt{Mandelbrot} ; vous
+  trouverez alors le \texttt{mandel.c} en équilibrage dynamique.
+\end{itemize}
+
+L'organisation du système de fichiers employée est décrite en figure
+\ref{fig:git:syst}.
+
+Un dépôt Git aussi structuré permet de factoriser les modifications du
+code, donc permet une meilleure automatisation (voir l'annexe
+\ref{app:Makefiles} qui utilise une telle automatisation). En
+l'ocurrence, si je veux renommer la variable qui contient le rang du
+processus, je me déplace sur \emph{mpi-master} (puisque cette
+modification impacte tout ce qui a trait à MPI), je fais ma
+modification, j'amende le dernier commit\footnote{plutôt que d'en
+  créer un nouveau, car pour ce projet je préfère un historique facile
+  à lire qu'un historique complet}, puis je rebase toutes les branches
+qui partent de celui-ci sur sa version amendée. À présent, tous les
+codes ont le nouveau nom de variable. Je peux par exemple faire
+\texttt{grep <nouveau nom> mandel.c} pour voir à quoi elle est
+assignée sur n'importe quelle branche.
+
+\clearpage
+
+
+
+\begin{onecolumn}
+
+\section{Système de fichiers}
+
+\begin{longtable}{>{\ttfamily}m{0.36\textwidth} p{0.58\textwidth}}
+  \caption{Système de fichiers\label{fig:git:syst}}\\
+  \null\hspace{0.15\textwidth}chemin & (branche) Description\\
+  \hline
+  \endfirsthead
+  \caption{(continued)}\\
+  \null\hspace{0.15\textwidth}chemin & (branche) Description\\
+  \hline
+  \endhead
+    /                          & Racine du projet\\
+    /.gitattributes            & Configuration de la manière dont Git
+                                 doit interpréter chaque fichier.\\
+    /.gitignore                & Configuration de la liste des motifs
+                                 de fichier dont Git ne doit pas
+                                 s'occuper.\\
+    /.git/                     & Dossier de stockage pour Git\\
+                               & \\
+    /Convolution/              & Code relatif au TP sur la convolution\\
+    /C /convol.c               & Code source\\
+    /C /hosts                  & (\emph{mpi-master}) Liste des
+                                 machines sur lesquelles exécuter le
+                                 code. Une adresse IP ou nom par
+                                 ligne.\\
+    /C /Makefile               & Automatise la compilation du code
+                                 (voir annexe \ref{app:Makefiles})\\
+    /C /propagate              & (\emph{mpi-master}) Script
+                                 automatisant le déploiement et
+                                 l'exécution sur les machines dans le
+                                 fichier hosts. Voir annexe
+                                 \ref{app:propagate}\\
+    /C /rasterfile.h           & Quelques constantes sur le format des
+                                 fichiers \texttt{.ras}\\
+                               & \\
+    /Mandelbrot/               & Code relatif au TP sur la fractale\\
+    /M /mandel.c               & Code source\\
+    /M /hosts                  & idem\\
+    /M /Makefile               & idem\\
+    /M /propagate              & idem\\
+    /M /rasterfile.h           & idem\\
+                               & \\
+    /Donnees/                  & Fichiers nécessaires à l'exécution de
+                                 l'un ou l'autre des programmes
+                                 ci-dessus\\
+    /D /Albert-Einstein.ras    & Image sur laquelle lancer la
+                                 convolution.\\
+                               & \\
+    /init-mpi                  & (\emph{mpi-master}) Script
+                                 automatisant la génération de clés
+                                 openssh sur les machines du
+                                 fichier Mandelbrot/hosts\\
+                               &\\
+    /Resultats/                & Dossier contenant les fichiers CSV
+                                 des mesures.\\
+    /S /filtres.txt            & Nom des filtres implémentés dans
+                                 \texttt{convol.c}\\
+    /S /convol-*br*.csv        & (\emph{*br*}) Mesures du code de
+                                 \texttt{convol.c} sur la branche
+                                 *br*\footnote{Le suffixe *br* est
+                                   nécessaire pour automatiser la
+                                   construction du rapport — voir
+                                   annexe \ref{app:Makefiles}}\\
+    /S /mandel-*br*.csv        & (\emph{*br*}) Mesures du code de
+                                 \texttt{mandel.c} sur la branche
+                                 *br*\\
+                               & \\
+    /Rapport/                  & (\emph{master}) Contient les fichiers
+                                 sources du rapport\\
+    /R /appendix/              & Contient les fichiers sources des
+                                 annexes\\
+    /R /a /installation.tex    & Annexe A\\
+    /R /a /git.tex             & Annexe B\\
+    /R /(data/)                & Contient les fichiers de mesure et
+                                 code sources extraits des autres
+                                 branches du dépôt après un
+                                 \texttt{make}. Voir annexe
+                                 \ref{app:Makefiles}.\\
+    /R /fragment/              & Diverses parties du rapport\\
+    /R /f /Albert-Einstein.jpg & Image\,\,convertie\,\,%
+                                 d'après
+                                 \texttt{Donnee/Albert-Einstein.ras}\\
+    /R /f /CC-BY.png           & Logo © Creative Commons\\
+    /R /f /copyright.tex       & Source du paragraphe en page 2\\
+    /R /f /logo\_ensg.png      & Logo © École nationale des sciences
+                                 géographiques\\
+    /R /f /mandel.c            & Code utilisé en arrière-plan sur la
+                                 couverture\\
+    /R /f /rapport-convol.tex  & Rapport du TP~2\\
+    /R /f /rapport-openmp.tex  & Rapport du TP~3\\
+    /R /f /titlepage.tex       & Code source de la page de
+                                 couverture\\
+    /R /Makefile               & Fichier permettant d'automatiser la
+                                 construction du rapport ; voir
+                                 l'annexe \ref{app:Makefiles}\\
+    /R /mandelbrot/            & Contient le code source du TP~1,
+                                 séparé par question (de 0 à 4)\\
+    /R /(rapport.aux)          & Lors de la première compilation,
+                                 LaTeX y stocke les références, qui
+                                 sont mises à jour lors de la deuxième
+                                 compilation.\\
+    /R /(rapport.log)          & LaTeX y stocke des détails sur la
+                                 dernière compilation.\\
+    /R /(rapport.out)          & LaTeX y stocke les liens de la table
+                                 des matières du PDF entre deux
+                                 compilations.\\
+    /R /(rapport.pdf)          & Sortie de compilation\\
+    /R /rapport.tex            & Code source principal du rapport
+                                 incluant tous les autres.\\
+    /R /(rapport.toc)          & LaTeX y stocke les liens de la table
+                                 des matières entre deux
+                                 compilations.\\
+\end{longtable}
+
+\end{onecolumn}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../rapport"
+%%% End:

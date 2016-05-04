@@ -29,7 +29,8 @@ sources=rapport.tex \
 	mandelbrot/question-2.tex \
 	mandelbrot/question-3.tex \
 	mandelbrot/question-4.tex \
-	appendix/installation.tex
+	appendix/installation.tex \
+	appendix/git.tex
 
 data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/mandel-seq-taille-ext.csv \
