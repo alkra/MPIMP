@@ -1,0 +1,226 @@
+\chapter{Guide d'installation}
+\label{app:install}
+
+Le code du TP est versionné à l'aide du système Git. Il est réparti
+sur plusieurs branches, qui ne sont pas destinées à être fusionnées
+(voir l'annexe \ref{app:git}). Ainsi, la récupération de toutes les
+branches est indispensable.
+
+\section{Prérequis}
+
+\subsubsection{Pour le code}
+
+\paragraph{Linux}
+Les programmes sont écrits en C, et conçus pour fonctionner sur un
+système \emph{à la Unix} (GNU/Linux, BSD, Mac, ...). Windows n'est
+officiellement pas supporté ; toutefois, si vous avez les
+connaissances requises (adapter les chemins de fichier, installer
+les programmes \texttt{GNU}, \texttt{sed}, \texttt{bash}, déboguer les
+\texttt{Makefile}s), le projet devrait fonctionner correctement.
+
+\paragraph{GCC}
+Il vous faut un compilateur C. Nous utilisons \texttt{gcc}. Si vous
+souhaitez utiliser un autre compilateur, il vous faudra adapter les
+\texttt{Makefile}s. (voir l'annexe \ref{app:Makefiles}).
+
+\paragraph{OpenMPI}
+OpenMPI comprend une bibliothèque C, à installer dans le répertoire
+correspondant de votre compilateur, et une collection de binaires
+(notamment le pseudo-compilateur \texttt{mpicc} et
+\texttt{mpirun}). Les distributions GNU/Linux de type Debian les
+distribuent dans les paquets \texttt{libopenmpi-dev} et
+\texttt{openmpi-bin}.
+
+\paragraph{OpenMP}
+Assurez-vous d'utiliser un com\-pi\-la\-teur compatible avec les
+directives OpenMP. Il n'y a rien à installer.
+
+\paragraph{Make}
+GNU \texttt{make} est un programme permettant d'automatiser la
+compilation (voir annexe \ref{app:Makefiles}). Le paquet Debian a pour
+nom \texttt{make}.
+
+\paragraph{Git}
+Git est un système de gestion de versions distribué. Pour plus de
+détails quant à son utilité pour le projet, reportez-vous à l'annexe
+\ref{app:git}.
+
+\paragraph{openssh}
+\texttt{openssh} permet d'ouvrir un shell sécurisé sur une machine
+distante. Nous en avons besoin pour lancer des programmes MPI sur
+plusieurs machines. (voir la section \ref{sec:installation:machines})
+
+\paragraph{bash}
+Nos scripts d'automatisation sont à exécuter dans le
+\emph{\textbf{B}ourne-\textbf{a}gain \textbf{sh}ell}. \texttt{bash}
+devrait être installé sur la plupart des distributions GNU/Linux et
+Mac.
+
+\subsubsection{Pour le rapport}
+
+Le rapport est rédigé en \LaTeX. Si vous souhaitez le recompiler, vous
+aurez besoin des paquets cités ci-après.
+
+
+\paragraph{GNU/Linux, Make, Git} \emph{confere supra}.
+
+\paragraph{pdflatex}
+Une distribution \TeX\,/\,\LaTeX\ est composée d'un interpréteur
+(respectivement \texttt{[pdf]tex} et \texttt{[pdf]latex}) générant un
+fichier au format \emph{\textbf{d}e\textbf{v}ice
+  \textbf{i}ndependant}, destiné à être compris par toutes les
+imprimantes, ou directement dans le \emph{\textbf{p}ortable
+  \textbf{d}ocument \textbf{f}ormat} (PDF) qui est mieux adapté à une
+lecture dématérialisée ; et d'un grand nombre de paquets qui
+enrichissent le langage. L'ensemble est distribué sous le nom de \TeX
+live sous GNU/Linux, Mac\TeX\ sous Mac, et Mik\TeX\ sous Windows. Si
+vous êtes sous Debian, vous aurez besoin des paquets suivants :
+\texttt{texlive-latex-extra}, \texttt{texlive-science}, et
+\texttt{texlive-lang-french} ; par le jeu des dépendances, vous
+installerez tous les autres paquets nécessaires. Les autres
+distributions proposent un moyen d'installer les paquets \LaTeX\ à la
+volée.
+
+\section{MPI – Configuration des machines}
+\label{sec:installation:machines}
+
+Cette section décrit le script \texttt{init-mpi}.
+
+Le fichier \texttt{hosts} dans les dossiers des sources contient la
+liste des machines à utiliser pour lancer les programmes. Il doit y
+avoir une adresse IP ou nom de domaine par ligne. Le programme sera
+recompilé sur la première machine listée.
+
+Les communications au sein d'un communicateur utilisent des
+connections SSH. \emph{Il ne doit pas être demandé de mot de
+  passe}. Pour cela, vous avez la possibilité de modifier la
+configuration de PAM pour ne pas authentifier la connexion, ou bien
+utiliser une authentification à base de clés openssh.
+
+Pour générer une clé, on ouvre un shell sur la première machine, et on
+lance la commande \texttt{ssh-keygen -t rsa -b 1024}. Pour la suite de
+cette section, il sera considéré que vous avez laissé le nom de
+fichier par défaut. Ne pas entrer de mot de passe, tapez \emph{Entrée}
+directement aux deux invites.
+
+On génère une clé courte (1024 bits) pour ne pas trop perdre de
+temps. Si le système est critique, ou l'utilisation en est prolongée,
+augmenter cette valeur.
+
+Le fichier \texttt{id\_rsa} contient la clé par défaut associée à
+l'utilisateur.
+
+On ne protège pas la clé par un mot de passe, puisque l'objet de cette
+démarche est justement de ne pas avoir à taper de mot de passe.
+
+On va ensuite faire connaître cette clé à toutes nos machines, en
+utilisant une boucle \texttt{for} qui épluche le fichier
+\texttt{hosts}. Vous êtes encouragé à utiliser le même nom
+d'utilisateur sur toutes les machines ; dans le cas contraire, de
+nombreux scripts et configuration de ces annexes ne marcheront pas.
+
+\begin{lstlisting}[language=bash]
+for host in $(cat hosts)
+do
+    ssh-copy-id $host
+done
+\end{lstlisting}
+
+Et on recommance pour toutes les machines. En fait, on peut encapsuler
+ces trois commandes dans une boucle \texttt{for} depuis le répertoire
+du ficher hosts. Pensez à adapter le dossier de destination.
+
+
+\section{Récupération des sources}
+
+Les sources sont hébergées en ligne, sur mon GitHub, à l'adresse
+\url{https://github.com/alkra/MPIMP}. Pour les télécharger, nous
+allons utiliser le client \texttt{git}. Le contenu du dépôt sera copié
+dans un sous-dossier MPIMP du dossier courant.
+
+\begin{verbatim}
+git clone \
+    https://github.com/alkra/MPIMP
+\end{verbatim}
+
+Ce n'est pas fini ! Pour l'instant, vous n'avez récupéré que la
+branche \emph{master} du dépôt. Vous devez suivre les autres
+branches (listing \ref{lst:installation:clone}).
+
+\begin{lstlisting}[float=*, language=bash, caption=Copie du dépôt,
+  label=lst:installation:clone]
+cd MPIMP
+for branch in mpi-master mpi-static mpi-dynamic \
+              mp-seq mp-static mp-dynamic
+do
+    git checkout -b $branch origin/$branch
+done
+git checkout master
+\end{lstlisting}
+
+Voir l'annexe \ref{app:git} pour plus de détails.
+
+
+
+\section{Compilation et lancement}
+
+\subsubsection{Programmes séquentiels}
+
+Il suffit de copier (avec \texttt{scp}) le dossier source sur la
+machine distante, s'y déplacer, et lancer \texttt{make} suivi de
+\texttt{./mandel.akraus}. L'extension de ce fichier exécutable vient
+du fait que, dans les conditions du TP, tous les étudiants
+travaillaient sur les mêmes machines dans le même dossier : il fallait
+donc différentier les exécutables de chacun.
+
+\subsubsection{MPI}
+
+Sur les branches dérivant de \emph{mpi-master} se trouve un script
+\texttt{propagate}, décrit en annexe \ref{app:propagate}, qui se
+charge de mener à bien la compilation, le lancement, et la
+récupération des résultats.
+
+\begin{verbatim}
+./propagate --help
+./propagate <options>
+\end{verbatim}
+
+
+
+\section{Nettoyage – todo-list}
+
+Il faut supprimer les fichiers copiés sur toutes les machines
+distantes. Vous pouvez faire une boucle \texttt{for} sur le contenu du
+fichier hosts.
+
+Sur la première machine, faire un \texttt{make clean} pour supprimer
+les exécutables et fichiers de compilation. Supprimez aussi les
+fichiers de résultat, ainsi que l'ensemble des sources.
+
+Enlevez les $n$ dernières lignes des fichiers
+\texttt{\string~/.ssh/authorized\_keys} de toutes les machines, où $n$
+est le nombre de lignes du fichier hosts. Chaque ligne de ceux-là
+représente la clé d'un des hôtes. Enfin, sur chaque machine, supprimez
+\texttt{\string~/.ssh/id\_rsa} et \texttt{\string~/.ssh/id\_rsa.pub}.
+
+
+
+
+\section{Compiler le rapport}
+
+D'abord, assurez-vous avec un \texttt{git status} que vous n'avez
+aucune modification détectée. Si des noms de fichier rouges
+apparaissent avant la section \emph{Fichiers non suivis (Untracked
+  files)}, validez-les, ou annulez-les avec \texttt{git checkout --
+  <fichier>}.
+
+Déplacez-vous ensuite dans le sous-dossier \texttt{Rapport} de la
+branche \emph{master}, et lancez \texttt{make}. Cela va générer un
+grand nombre de fichiers csv dans \texttt{data}, que vous pourrez
+supprimer avec un \texttt{make clean}, afficher beaucoup de lignes sur
+votre terminal, et enfin générer un fichier \texttt{rapport.pdf}.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../rapport"
+%%% End:

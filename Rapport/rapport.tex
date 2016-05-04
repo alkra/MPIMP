@@ -8,6 +8,7 @@
 % Directories
 \newcommand\fragment{fragment}
 \newcommand\data{data}
+\newcommand\appendices{appendix}
 
 % French typesetting
 \usepackage[utf8]{inputenc}
@@ -188,6 +189,13 @@
 \chapter{OpenMP}
 
 \input{\fragment/rapport-openmp}
+
+% Annexes
+\appendix
+\titleformat{\chapter}[display]{\normalfont\huge\bfseries\centering}{Annexe~\thechapter}{20pt}{\Huge}
+
+
+\input{\appendices/installation.tex}
 
 \end{document}
 
