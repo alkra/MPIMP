@@ -31,7 +31,8 @@ sources=rapport.tex \
 	mandelbrot/question-4.tex \
 	appendix/installation.tex \
 	appendix/git.tex \
-	appendix/makefiles.tex
+	appendix/makefiles.tex \
+	appendix/propagate.tex
 
 data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/mandel-seq-taille-ext.csv \
@@ -47,7 +48,8 @@ data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/convol-proc-1-0.csv data/convol-proc-1-4.csv \
 	data/convol-proc-6-0.csv data/convol-proc-6-4.csv \
 	fragment/mp-seq-mandel.c fragment/mp-stat-mandel.c fragment/mp-seq-convol.c \
-	fragment/mpi-mandel-Makefile fragment/rapport-Makefile
+	fragment/mpi-mandel-Makefile fragment/rapport-Makefile \
+	fragment/propagate
 
 
 # Cible primaire
@@ -197,6 +199,12 @@ fragment/mpi-mandel-Makefile:
 
 fragment/rapport-Makefile:
 	${sed} 's/é/e/g; s/# Conversion du point decimal//g' Makefile > $@
+
+fragment/propagate:
+	git checkout mpi-master -- ../Mandelbrot/propagate
+	git reset -q HEAD          ../Mandelbrot/propagate
+	mv ../Mandelbrot/propagate $@
+
 
 clean:
 	-rm -f ${data}

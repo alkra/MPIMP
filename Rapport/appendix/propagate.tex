@@ -1,0 +1,163 @@
+\chapter{Le script propagate}
+\label{app:propagate}
+
+
+Pour décrire ce script, nous allons nous efforcer d'adopter une
+progression linéaire.
+
+
+
+\section{L'interface}
+
+L'interface se fait sous une forme bien connu des utilisateurs de
+ligne de commande sous Linux ; elle est identique pour tous les
+scripts propagate de toutes les branches.
+
+\begin{description}
+\item[nom du programme] ./propagate ;
+\item[option courte] un tiret, une lettre, un espace, la valeur de
+  l'option ;
+\item[option longue] deux tirets, le nom complet de l'option, un
+  espace, la valeur de l'option ;
+\item[argument \no 1 (optionnel)] le nombre de processus ;
+\item[autres arguments (optionnels)]\null$\;$ des arguments qui
+  vont être directement passés à la ligne de commande \texttt{mpirun}.
+\end{description}
+
+La boucle de lecture des arguments tour\-ne tant qu'il en reste, mais
+sera arrêtée (\texttt{break}) une fois le nombre de processus ou, à
+défaut, \texttt{-\null-} lu.
+
+Le premier cas est l'option d'aide ; dans ce cas, le texte d'aide est
+affiché et le programme s'arrête. L'affichage du texte d'aide se fait
+avec des \texttt{echo}, ce qui est fort disgrâcieux : entre-temps,
+j'ai appris à écrire un pseudo-fichier directement dans l'entrée
+standard et à l'afficher avec \texttt{cat} :
+
+\begin{lstlisting}[language=bash]
+  cat <<EOF
+Ceci est le contenu d'un
+pseudo-fichier, avec des
+retours a la ligne, et
+interprete par ${SHELL}.
+EOF
+\end{lstlisting} % $
+
+Chaque option, ainsi que le premier argument est associé à une
+variable. La valeur par défaut est écrite dès le début du programme,
+ou laissée vide et écrite après la grande boucle si elle dépend de la
+valeur d'une autre option. (par exemple, \texttt{path} dépend de
+\texttt{user}). Si l'option est dans la ligne de commande : dans le
+premier cas, elle écrase simplement la valeur ; dans le deuxième cas,
+elle remplit la variable, qui sera testée après la boucle, pour savoir
+si elle est vide, et donc susceptible d'être réinitialisée.
+
+
+\section{Les fonctions utiles}
+
+Au cours de ce script, il existe des fragments de code souvent
+réutilisés, par exemple pour exécuter une commande sur la machine
+distante, ou copier un fichier. Nous avons donc écrit des fonctions
+réalisant ces opérations.
+
+\begin{description}
+\item[runlocalcmd] affiche puis exécute une commande sur la machine
+  courante ; la valeur de retour est testée pour savoir si le
+  processus entier doit être arrêté ;
+\item[runcmd] exécute une commande sur la machine distante : cela
+  revient à exécuter en local un client ssh avec la commande
+  \texttt{\$*} en paramètre ;
+\item[sendfile] envoie un fichier sur la machine distante ; à nouveau,
+  cela revient à exécuter \texttt{scp} (pour \emph{\textbf{s}ecure
+    \textbf{c}o\textbf{p}y}) en local avec en premier argument le
+  paramètre de la fonction ;
+\item[getfile] effectue la copie inverse.
+\end{description}
+
+La fonction \textbf{sendsourcefile} fait l'objet de la section
+suivante.
+
+
+\section{Gestion des codes sources}
+
+Cette section décrit l'objet d'un exercice de style. Nous souhaitons
+ne pas avoir à copier un fichier s'il n'a pas été modifié. En somme,
+il s'agit d'imiter le comportement d'un Makefile.
+
+Il est difficile de répondre à ce problème avec un (ou plus difficile,
+plusieurs) Makefile à cause du grand nombre de comportements dépendant
+d'options en ligne de commande.
+
+Pour savoir si le fichier a été modifié entre deux lancements, nous
+allons enregistrer une somme de contrôle dans un fichier de même nom
+se trouvant dans le sous-dossier caché \texttt{.sha}. Une somme de
+contrôle est un nombre dont le calcul fait intervenir tous les octets
+du fichier en entrée : s'il est modifié à un endroit, le nombre
+change. L'algorithme utilisé est bien évidemment plus complexe qu'une
+simple somme, pour éviter les modifications qui se compensent (exemple
+: $4 = 1 + 3 = 2 + 2$). Étant donné que cette application n'a pas de
+but cryptographique, l'algorithme utilisé importe peu. Pour calculer
+cette somme de contrôle, nous utilisons le programme \texttt{shasum}
+(du paquet GNU coreutils).
+
+À présent, nous pouvons commenter la fonction
+\texttt{sendsourcefile}. On y commence par vérifier que le fichier à
+envoyer existe, puis que le dossier \texttt{.sha} existe (ce qui
+devrait toujours être le cas, \emph{cf. infra}). S'il existe, on
+compare la somme de contrôle du fichier en argument à celle écrite
+dans le fichier de même nom dans le dossier \texttt{.sha}. Si les
+sommes diffèrent, ou que le fichier-somme est vide, ou que le dossier
+\texttt{.sha} n'existe pas, on envoie le fichier, on en calcule la
+somme, qu'on écrit dans un fichier de même nom dans le dossier
+\texttt{.sha}. La variable \texttt{COMPILE} indique s'il est
+nécessaire de lancer une compilation.
+
+Après la définition de cette fonction commence le code ayant pour but
+d'envoyer les fichiers sources. La première étape est de créer le
+dossier \texttt{.sha} s'il n'existe pas. On initialise également la
+variable \texttt{COMPILE}. Puis, on boucle sur les fichiers sources et
+on les envoie si besoin.
+
+Si la variable \texttt{COMPILE} n'est pas vide\footnote{\emph{i.e.}
+  elle est à \texttt{true}, mais il est plus robuste de tester si elle
+  a été modifiée depuis son initialisation à vide.}, on lance la
+compilation et on recopie les exécutables sur toutes les machines du
+cluster.
+
+On applique aux fichiers de données\footnote{Le \texttt{in} de la
+  boucle est vide, car il n'y a pas de fichier de données pour
+  Mandelbrot.} un traitement similaire, en omettant la somme de
+contrôle puisqu'ils ne sont pas censés être modifiés. On écrit la
+liste des fichiers envoyés (un nom par ligne) dans le fichier caché
+\texttt{.sent\_data}. On ne renvoie pas un fichier qui a déjà été
+envoyé (et qui est par conséquent dans \texttt{.sent\_data}, ce que le
+programme GNU \texttt{grep} permet de vérifier).
+
+
+\section{Lancement du calcul}
+
+Si toutes les étapes précédentes ont réussi, on peut lancer le calcul
+et récupérer le résultat.
+
+\clearpage
+
+\begin{onecolumn}
+  \section{Le script complet (Mandelbrot)}
+
+  \lstinputlisting[language=bash,
+  basicstyle=\scriptsize, showspaces=false,
+  showstringspaces=false,
+  linerange={1-18, 58-220},
+  caption=Propagate
+]{\fragment/propagate}
+\end{onecolumn}
+
+\clearpage
+\twocolumn
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../rapport"
+%%% End:
