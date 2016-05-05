@@ -1,0 +1,191 @@
+\chapter{Makefiles}
+\label{app:Makefiles}
+
+
+\section{Introduction}
+
+Au fur et à mesure que les projets grossissent, le temps passé à
+compiler les codes sources augmente. GNU \texttt{make} est un
+programme permettant de ne recompiler que les fichiers qui ont changé
+depuis la précédente compilation. Il faut néanmoins le configurer
+proprement, dans un fichier nommé \texttt{Makefile}.
+
+Un Makefile se présente sous la forme d'une liste de cibles
+(\emph{targets}), chacune suivie d'éventuelles cibles dont elle dépend
+et d'une liste d'instructions shell. Exemple ci-dessous :
+
+\begin{verbatim}
+cible: dep1 dep2
+        instruction arg1 arg2
+        autre > fichier
+\end{verbatim}
+
+Une cible peut être un fichier, auquel cas elle ne sera réévaluée que
+s'il a été changé, ou une \emph{PHONY target}, c'est-à-dire un simple
+nom facile à retenir pour l'utilisateur final. Pour ne pas que
+\texttt{make} confonde cette dernière avec un fichier, il est d'usage
+de la mettre en dépendance d'une cible au nom spécial :
+\texttt{.PHONY}. Pour l'exemple, nous allons commenter le Makefile du
+TP sur la fractale en version MPI (listing \ref{lst:mandel:Makefile}).
+
+\lstinputlisting[float=*, language={[gnu]make},
+  caption=Makefile de Mandelbrot en version MPI,
+  label=lst:mandel:Makefile,
+  linerange={10-12, 14-29, 32-39}
+]{\fragment/mpi-mandel-Makefile}
+
+Après les commentaires d'en-tête non repris ici, on commence par une
+première cible. C'est celle qui sera exécutée lorsque le programme
+\texttt{make} est appelé sans cible en argument. Cette cible renvoie,
+par un jeu de dépendance, vers une cible définie plus bas. Notons que
+cette première cible n'est pas un nom de fichier ; elle apparaît donc
+dans la liste des dépendances de \texttt{.PHONY} tout en bas du
+fichier.
+
+Ensuite apparaissent deux cibles représentant les fichiers objets
+intermédiaires. Ils peuvent être compilés et liés en un seul appel au
+compilateur, mais le but de \texttt{make} étant d'éviter de tout
+recompiler à chaque fois, il est recommandé de les séparer en
+plusieurs cibles. Évidemment, cela n'a que peu d'importance pour ce
+projet à un seul fichier source. Les deux cibles sont en réalité deux
+versions du même fichier source : la première est une version de
+débogage, où l'on demande au compilateur de générer des avertissements
+et des symboles de débogage, et la deuxième une version de production,
+où le compilateur optimise un peu le code.
+
+Conformément aux deux versions mentionnées plus haut, l'appel à
+l'éditeur de liens se fait dans deux cibles distinctes : une cible de
+production, \texttt{release}, réclamant le fichier \texttt{mandel.o}
+issu de la compilation en mode production ; et une cible de débogage,
+\texttt{debug}, réclamant le fichier \texttt{mandel.od} issu de la
+compilation de débogage. Ces deux cibles sont des noms qui parlent à
+l'utilisateur et non pas des noms de fichier\footnote{En
+  l'occurrence, elles renvoient toutes deux au même fichier,
+  \texttt{./mandel.akraus}} ; elles figurent donc dans les dépendances
+de la fausse-cible \texttt{.PHONY} en bas du fichier.
+
+Enfin, nous proposons deux dernières ci\-bles dans ce Makefile
+permettant respectivement d'enlever tous les fichiers qui ne sont pas
+présents dans le répertoire de base, et de relancer une compilation en
+partant de zéro (notez l'utilisation des dépendances pour cette
+dernière).
+
+
+\section[Makefile du rapport]{%
+  Un example avancé : le Makefile du rapport%
+}
+
+Ce Makefile, bien que plus long, n'est pas beaucoup plus technique que
+le précédent.
+
+Il commence par la définition d'un certain nombre de variables. Les
+premières sont les programmes à utiliser, qui peuvent être dépendants
+de l'installation (par exemple, préciser le chemin complet). Ils
+peuvent être aisément modifiés, tant qu'ils présentent la même
+interface. Ensuite vient la liste des fichiers source, qui n'est pas
+utilisée, et la liste des fichiers intermédiaires nécessaires à la
+compilation du rapport, qui est utilisée inaltérée à plusieurs
+endroits.
+
+Les fichiers intermédiaires sont issus des gros fichiers CSV de
+mesures, et sont destinés à être importés directement dans le rapport
+: ils sont donc découpés par série de mesures. Commençons par regarder
+la cible d'un tel fichier intermédiaire en listing
+\ref{lst:mandel:stat} page \pageref{lst:mandel:stat}.
+
+\lstinputlisting[float=*, language={[gnu]make},
+  caption=Makefile du rapport (extrait : CSV intermédiaire),
+  label=lst:mandel:stat,
+  linerange={60-67, 72-75, 89-92}
+]{\fragment/rapport-Makefile}
+
+\lstinputlisting[float=*, language={TeX},
+  caption=Utilisation de l'extrait de la figure \ref{lst:mandel:stat}
+  dans le fichier \LaTeX,
+  label=lst:rapport:stat,
+  firstline=45, lastline=48
+]{mandelbrot/question-3.tex}
+
+La cible du bas est le nom du fichier à générer. \texttt{make}
+commence par exécuter la dépendance :\\
+\texttt{../Mandelbrot/mandel-stat.csv}.
+
+Cette cible de dépendance se trouve cachée dans le groupe intitulé :\\
+\texttt{../Resultats/\%-stat.csv}, où \texttt{\%} est un caractère
+\emph{joker}. Le nom complet de la cible appelée se trouve alors dans
+la variable \texttt{\$@}. Cet astuce nous permet de traiter les
+résultats de Convolution et de Mandelbrot de la même manière. Cette
+cible n'a aucune dépendance, donc les instructions sont ex\-écu\-tées
+directement. On récupère le fichier ciblé sur sa branche
+\emph{mpi-static}. Par défaut, Git le porte candidat comme fichier à
+valider ; on le repasse alors au statut de fichier non suivi avec
+\texttt{git reset}.
+
+Puis, \texttt{make} revient sur la cible première. Le fichier
+\texttt{mandel-stat.csv} contient l'intégralité des mesures ; or, pour
+le rapport, on ne veut que les mesures avec deux processus sur la même
+machine, avec la taille de l'image à générer variant (d'où le nom du
+fichier). On va donc sélectionner les lignes du fichier
+correspondantes avec une instruction \texttt{sed}, où le programme
+\texttt{sed} est caché dans la variable \emph{line}.
+
+Utiliser un processus aussi compliqué a presque plus d'inconvénients
+que d'avantages. Si on applique un traitement mineur sur les mesures,
+par exemple convertir les secondes en millisecondes, le rapport sera
+compilé avec les nouvelles valeurs de manière transparente ; il
+suffira de changer la légende des graphiques. Si on intervertit deux
+colonnes, la compilation fonctionnera ; il faudra néanmoins penser à
+modifier les codes \LaTeX\ correspondants (exemple en listing
+\ref{lst:rapport:stat}). Si on déplace des lignes, il n'y aura pas
+besoin de modifier le code \LaTeX, mais en revanche il faudra
+retravailler le Makefile. En somme, une telle démarche ne simplifie
+pas la gestion des données externes, et n'est donc valable qu'à titre
+d'exercice.
+
+En pratique, on n'appellera presque jamais la cible d'un fichier
+intermédiaire. Lors du développement du rapport, je disposais d'un
+éditeur de texte qui se chargeait d'appeler l'interpréteur \LaTeX ; je
+me contentais alors d'exécuter \texttt{make data} (et \texttt{make
+  clean} avant de changer de branche). La cible \texttt{data} dépend
+de tous les petits fichiers intermédiaires, qui seront générés l'un
+après l'autre. Enfin, on applique un traitement sur tous ces petits
+fichiers pour convertir la virgule rentrée par LibreOffice lors de
+l'édition des fichiers CSV originaux en point décimal ; le standard
+CSV utilisé par l'interpréteur côté \LaTeX\ utilise en effet le point
+comme séparateur décimal. Détaillons l'expression régulière utilisée
+pour cette tâche :
+
+\begin{description}
+\item[s///g :] remplacer (\emph{\textbf{s}ubstitute}) toutes les
+  occurrences dans la ligne considérée (\emph{\textbf{g}lobally}) de
+  ce qui est entre les deux premiers / par ce qui est entre les deux
+  derniers / ;
+\item[{[0-9]}] un chiffre ;
+\item[\textbackslash ( \textbackslash )] ce qui est
+  là-dedans constitue un des neuf groupes possibles, à mettre dans
+  \textbackslash 1, puis \textbackslash 2, etc. ;
+\item[{[0-9],[0-9]*}] un chiffre suivi
+  d'une virgule, suivie de 0 ou plusieurs chiffres ; à remplacer par :
+\item[\textbackslash 1\textbackslash .\textbackslash 2] le premier
+  groupe (= l'unité), suivi d'un point (échappé car c'est un caractère
+  réservé), suivi du deuxième groupe (= la partie décimale)
+\end{description}
+
+Évidemment, cette expression régulière est un peut trop simple et peut
+s'appliquer à autre-chose que des nombres : par exemple, \og Le chef
+compta 1,2,3 et les musiciens partirent.\fg\ Cependant, les données
+que nous avons ici sont convenables.
+
+Dans le code \LaTeX\ du listing \ref{lst:rapport:stat}, on calcule à
+la volée le carré de la taille de l'image (deuxième colonne, numérotée
+à partir de 0) en abscisse, et l'ordonnée est la mesure dans la
+cinquième colonne. Les autres options précisent que le séparateur du
+fichier texte est un point-virgule, et que la série commence à la
+première ligne du fichier.
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../rapport"
+%%% End:

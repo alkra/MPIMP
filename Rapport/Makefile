@@ -30,7 +30,8 @@ sources=rapport.tex \
 	mandelbrot/question-3.tex \
 	mandelbrot/question-4.tex \
 	appendix/installation.tex \
-	appendix/git.tex
+	appendix/git.tex \
+	appendix/makefiles.tex
 
 data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/mandel-seq-taille-ext.csv \
@@ -45,7 +46,8 @@ data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 	data/convol-iter-6-0.csv data/convol-iter-6-2.csv data/convol-iter-6-4.csv \
 	data/convol-proc-1-0.csv data/convol-proc-1-4.csv \
 	data/convol-proc-6-0.csv data/convol-proc-6-4.csv \
-	fragment/mp-seq-mandel.c fragment/mp-stat-mandel.c fragment/mp-seq-convol.c
+	fragment/mp-seq-mandel.c fragment/mp-stat-mandel.c fragment/mp-seq-convol.c \
+	fragment/mpi-mandel-Makefile fragment/rapport-Makefile
 
 
 # Cible primaire
@@ -185,6 +187,16 @@ fragment/mp-seq-convol.c:
 	git reset -q HEAD      ../Convolution/convol.c
 	cp ../Convolution/convol.c $@
 	git checkout        -- ../Convolution/convol.c
+
+# Annexes
+fragment/mpi-mandel-Makefile:
+	git checkout mpi-master -- ../Mandelbrot/Makefile
+	git reset -q HEAD          ../Mandelbrot/Makefile
+	cp ../Mandelbrot/Makefile $@
+	git checkout            -- ../Mandelbrot/Makefile
+
+fragment/rapport-Makefile:
+	${sed} 's/é/e/g; s/# Conversion du point decimal//g' Makefile > $@
 
 clean:
 	-rm -f ${data}
