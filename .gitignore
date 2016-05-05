@@ -17,6 +17,10 @@ rapport.pdf
 *.aux
 *.out
 *.toc
+*.loa
+*.lof
+*.lol
+*.lot
 
 # Images
 Rapport/data/

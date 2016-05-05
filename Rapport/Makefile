@@ -56,6 +56,7 @@ data=data/mandel-seq-taille.csv data/mandel-seq-prof.csv \
 rapport.pdf: ${sources} data
 	${pdflatex} -interaction=nonstopmode "\input" rapport.tex
 	${pdflatex} -interaction=nonstopmode "\input" rapport.tex
+	${pdflatex} -interaction=nonstopmode "\input" rapport.tex
 
 
 # Fichiers de donnée
@@ -209,7 +210,11 @@ fragment/propagate:
 clean:
 	-rm -f ${data}
 	-rm -f ${mandel}-stat* ${mandel}-dyn* \
-	${convol}-stat* ${convol}-dyn*
+	${convol}-stat* # ${convol}-dyn*
+
+pdf-clean: clean
+	-rm rapport.aux rapport.loa rapport.lof rapport.log rapport.lol \
+	rapport.lot rapport.out rapport.toc
 
 # Autres cibles
 .PHONY: pdf data clean mandel convol
